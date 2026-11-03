@@ -66,11 +66,8 @@
   box-sizing: border-box;
 }
 
-.edu-sql h2,
-.edu-sql h3,
-.edu-sql p,
-.edu-sql dl,
-.edu-sql dd {
+/* Low specificity: content of the host app (`endExtra`, e.g. a certificate) keeps its own margins. */
+:where(.edu-sql) :is(h2, h3, p, dl, dd) {
   margin: 0;
 }
 
@@ -156,7 +153,8 @@
   letter-spacing: 0.12em;
 }
 
-.edu-sql h2 {
+.edu-sql-title {
+  margin: 0;
   font-size: clamp(20px, 3vw, 28px);
   font-weight: 800;
   line-height: 1.2;
@@ -364,7 +362,7 @@
   color: var(--sql-ink-muted);
 }
 
-.edu-sql h3 {
+.edu-sql-step-title {
   font-size: 21px;
   font-weight: 800;
   line-height: 1.25;

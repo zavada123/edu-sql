@@ -174,7 +174,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
             <p className="edu-sql-step-label">
               {chapter?.title} · крок {stepNumber} з {steps.length}
             </p>
-            <h3>{step.title}</h3>
+            <h3 className="edu-sql-step-title">{step.title}</h3>
             <Story lines={step.story} />
             <div className="edu-sql-task">
               <span className="edu-sql-task-icon" aria-hidden="true">
