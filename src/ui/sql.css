@@ -43,10 +43,13 @@
 
 .edu-sql h2 {
   font-size: 1.4em;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .edu-sql h3 {
   font-size: 1.15em;
+  font-weight: 700;
 }
 
 .edu-sql-muted {
