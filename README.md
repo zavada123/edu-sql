@@ -76,7 +76,7 @@ Render the component only in the browser: it loads SQLite in an effect.
 
 ### Core without React
 
-`edu-sql/core` has the cases and the checker without the UI, for tests or a server re-check:
+`edu-sql/core` has the cases and the checker without the UI, for tests or a server re-check. It is compiled to JavaScript in `lib/core` (run `npm run build:lib` after a change in `src/core`), so Node loads it without a bundler:
 
 ```ts
 import initSqlJs from "sql.js"

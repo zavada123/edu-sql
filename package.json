@@ -9,14 +9,19 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:lib": "rm -rf lib && tsc -p tsconfig.lib.json"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./core": "./src/core/index.ts"
+    "./core": {
+      "types": "./lib/core/index.d.ts",
+      "import": "./lib/core/index.js"
+    }
   },
   "files": [
     "src",
+    "lib",
     "!src/**/*.test.ts",
     "!src/demo"
   ],

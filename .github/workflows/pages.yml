@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # lib/core is committed for servers that load the package without a bundler: it must match src/core.
+      - run: npm run build:lib && git diff --exit-code -- lib
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
