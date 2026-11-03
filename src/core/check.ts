@@ -1,5 +1,5 @@
 import type { Sandbox } from "./run.ts"
-import type { AnswerStep, Cell, Progress, QueryStep, Report, ResultTable, Step, Verdict, Case } from "./types.ts"
+import type { AnswerStep, Case, Cell, Progress, QueryStep, Report, ResultTable, Step, StepCheck, Verdict } from "./types.ts"
 
 const DECIMALS = 6
 
@@ -117,29 +117,50 @@ export const plural = (n: number, one: string, few: string, many: string): strin
 
 export const allSteps = (c: Case): Step[] => c.chapters.flatMap((ch) => ch.steps)
 
-export const emptyProgress = (c: Case): Progress => ({ caseId: c.id, solved: [], drafts: {}, hintsUsed: {} })
+export const emptyProgress = (c: Case): Progress => ({ caseId: c.id, solved: [], answers: {}, drafts: {}, hintsUsed: {} })
 
 /** The first step that is not solved yet, or undefined when the case is finished. */
 export const currentStep = (c: Case, p: Progress): Step | undefined => allSteps(c).find((s) => !p.solved.includes(s.id))
 
-export const markSolved = (p: Progress, stepId: string): Progress =>
-  p.solved.includes(stepId) ? p : { ...p, solved: [...p.solved, stepId] }
+/** Marks a step solved and keeps the accepted query or answer. A solved step keeps its first answer. */
+export const markSolved = (p: Progress, stepId: string, answer: string): Progress =>
+  p.solved.includes(stepId) ? p : { ...p, solved: [...p.solved, stepId], answers: { ...p.answers, [stepId]: answer } }
 
 /** Each hint costs a quarter of the step, but a solved step gives at least half. */
 const HINT_COST = 0.25
 const MIN_STEP_POINTS = 0.5
 
+/** Score from 0 to 1 for the solved steps: 1 per step, minus 0.25 per hint, but at least 0.5 per step. */
+export const caseScore = (c: Case, solved: readonly string[], hintsUsed: Readonly<Record<string, number>>): number => {
+  const steps = allSteps(c)
+  const points = steps
+    .filter((s) => solved.includes(s.id))
+    .reduce((sum, s) => sum + Math.max(MIN_STEP_POINTS, 1 - HINT_COST * Math.max(0, hintsUsed[s.id] ?? 0)), 0)
+  return steps.length === 0 ? 0 : Number((points / steps.length).toFixed(2))
+}
+
+/**
+ * Checks every step of a case again with the saved answers, for example on a server before it
+ * issues a certificate. A step without an answer does not pass.
+ */
+export const checkCase = (sandbox: Sandbox, c: Case, answers: Readonly<Record<string, string>>): StepCheck[] =>
+  allSteps(c).map((step) => {
+    const answer = Object.hasOwn(answers, step.id) ? answers[step.id] : undefined
+    if (answer === undefined) return { stepId: step.id, passed: false }
+    const verdict = step.kind === "query" ? checkQuery(sandbox, step, answer) : checkAnswer(step, answer)
+    return { stepId: step.id, passed: verdict.kind === "ok" }
+  })
+
 export const makeReport = (c: Case, p: Progress, stepId: string): Report => {
   const steps = allSteps(c)
   const solved = steps.filter((s) => p.solved.includes(s.id))
-  const points = solved.reduce((sum, s) => sum + Math.max(MIN_STEP_POINTS, 1 - HINT_COST * (p.hintsUsed[s.id] ?? 0)), 0)
   return {
     caseId: c.id,
     stepId,
     solvedSteps: solved.length,
     totalSteps: steps.length,
     finished: solved.length === steps.length,
-    score: steps.length === 0 ? 0 : Number((points / steps.length).toFixed(2)),
+    score: caseScore(c, p.solved, p.hintsUsed),
     progress: p
   }
 }

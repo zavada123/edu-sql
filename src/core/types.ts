@@ -113,12 +113,22 @@ export type Verdict =
   | { readonly kind: "mustUse"; readonly words: readonly string[] }
   | { readonly kind: "wrongAnswer" }
 
-/** Progress in a case: ids of solved steps and the last query of each step. */
+/** Progress in a case. */
 export interface Progress {
   readonly caseId: string
+  /** Ids of solved steps, in the order they were solved. */
   readonly solved: readonly string[]
+  /** The accepted query or answer of each solved step, so that a server can check the case again. */
+  readonly answers: Readonly<Record<string, string>>
+  /** The last text in the editor of each step. */
   readonly drafts: Readonly<Record<string, string>>
   readonly hintsUsed: Readonly<Record<string, number>>
+}
+
+/** One step after `checkCase` ran the saved answer again. */
+export interface StepCheck {
+  readonly stepId: string
+  readonly passed: boolean
 }
 
 /** What the trainer reports to the host app after each solved step. */

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { allSteps, checkAnswer, checkQuery } from "../check.ts"
+import { allSteps, caseScore, checkAnswer, checkCase, checkQuery } from "../check.ts"
 import { Sandbox } from "../run.ts"
 import { loadSqlForTests } from "../testing.ts"
 import { lostCup } from "./lost-cup.ts"
@@ -59,5 +59,22 @@ describe("case «lost cup»", () => {
       where access_log.time >= '17:00' and access_log.action = 'вхід' and access_log.day = '2026-10-15' and access_log.room_id = 214
       order by access_log.time`
     expect(checkQuery(sandbox, step, other)).toEqual({ kind: "ok" })
+  })
+
+  it("checks the whole case again from saved answers", () => {
+    const answers = Object.fromEntries(allSteps(lostCup).map((s) => [s.id, s.kind === "query" ? s.solution : (s.accepted[0] ?? "")]))
+    expect(checkCase(sandbox, lostCup, answers).every((r) => r.passed)).toBe(true)
+    const forged = { ...answers, culprit: "Марко Ковальчук", rooms: "SELECT 1" }
+    expect(checkCase(sandbox, lostCup, forged).filter((r) => !r.passed).map((r) => r.stepId)).toEqual(["rooms", "culprit"])
+    const { forum: _, ...missing } = answers
+    expect(checkCase(sandbox, lostCup, missing).find((r) => r.stepId === "forum")?.passed).toBe(false)
+  })
+
+  it("scores the case by hints", () => {
+    const all = allSteps(lostCup).map((s) => s.id)
+    expect(caseScore(lostCup, all, {})).toBe(1)
+    expect(caseScore(lostCup, all, { rooms: 1 })).toBeCloseTo(1 - 0.25 / all.length, 2)
+    expect(caseScore(lostCup, all, { rooms: 9 })).toBeCloseTo(1 - 0.5 / all.length, 2)
+    expect(caseScore(lostCup, [], {})).toBe(0)
   })
 })

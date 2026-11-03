@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react"
 import type { SqlJsStatic } from "sql.js"
 import {
   allSteps,
@@ -34,6 +34,8 @@ interface Props {
   readonly onChange?: (progress: Progress) => void
   /** After every solved step. `report.finished` is true when the case is solved. */
   readonly onStepSolved?: (report: Report) => void
+  /** Shown on the final screen under the stats, for example a certificate form of the host app. */
+  readonly endExtra?: ReactNode
 }
 
 const END = "end"
@@ -44,7 +46,7 @@ type Tab = "result" | "schema"
 type Feedback = { readonly kind: "ok" } | { readonly kind: "wrong"; readonly text: string } | { readonly kind: "none" }
 
 /** The SQL detective trainer: a story, a database and a query editor. */
-export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved }: Props) => {
+export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved, endExtra }: Props) => {
   const [sql, setSql] = useState<SqlJsStatic>()
   const [loadError, setLoadError] = useState<string>()
   const [progress, setProgress] = useState<Progress>(() => (initialProgress?.caseId === c.id ? initialProgress : emptyProgress(c)))
@@ -86,8 +88,8 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
     setTab("result")
   }
 
-  const solve = (s: Step) => {
-    const next = markSolved(progress, s.id)
+  const solve = (s: Step, accepted: string) => {
+    const next = markSolved(progress, s.id, accepted)
     update(next)
     setFeedback({ kind: "ok" })
     onStepSolved?.(makeReport(c, next, s.id))
@@ -99,7 +101,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
     setTab("result")
     if (step.kind !== "query" || solved) return
     const verdict = checkQuery(sandbox, step, query)
-    if (verdict.kind === "ok") solve(step)
+    if (verdict.kind === "ok") solve(step, query)
     else setFeedback(verdict.kind === "error" ? { kind: "none" } : { kind: "wrong", text: verdictMessage(verdict) })
   }
 
@@ -107,7 +109,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
     e.preventDefault()
     if (!step || step.kind !== "answer" || solved) return
     const verdict = checkAnswer(step, answer)
-    if (verdict.kind === "ok") solve(step)
+    if (verdict.kind === "ok") solve(step, answer)
     else setFeedback({ kind: "wrong", text: verdictMessage(verdict) })
   }
 
@@ -160,7 +162,8 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
               <dd>{Math.round(report.score * 100)}%</dd>
             </div>
           </dl>
-          <Notebook clues={clues} open />
+          {endExtra}
+          <Notebook clues={clues} open={endExtra === undefined} />
           <button type="button" className="edu-sql-btn edu-sql-btn-ghost" onClick={restart}>
             ↺ Розслідувати знову
           </button>

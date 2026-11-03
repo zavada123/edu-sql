@@ -70,7 +70,7 @@ Render the component only in the browser: it loads SQLite in an effect.
   "totalSteps": 14,
   "finished": true,
   "score": 0.94,
-  "progress": { "caseId": "lost-cup", "solved": ["rooms", "…"], "drafts": {}, "hintsUsed": { "forum": 1 } }
+  "progress": { "caseId": "lost-cup", "solved": ["rooms", "…"], "answers": { "rooms": "SELECT * FROM rooms" }, "drafts": {}, "hintsUsed": { "forum": 1 } }
 }
 ```
 
@@ -80,12 +80,17 @@ Render the component only in the browser: it loads SQLite in an effect.
 
 ```ts
 import initSqlJs from "sql.js"
-import { Sandbox, checkQuery, lostCup, allSteps } from "edu-sql/core"
+import { Sandbox, checkCase, checkQuery, lostCup, allSteps } from "edu-sql/core"
 
 const sandbox = new Sandbox(await initSqlJs(), lostCup.setup)
 const step = allSteps(lostCup)[0]
 checkQuery(sandbox, step, "SELECT * FROM rooms") // { kind: "ok" }
+
+// Before a certificate: run every saved answer of the student again.
+checkCase(sandbox, lostCup, progress.answers) // [{ stepId: "rooms", passed: true }, …]
 ```
+
+`progress.answers` keeps the accepted query or answer of each solved step. `endExtra` puts your own content (for example a certificate form) on the final screen.
 
 ## Writing a case
 
