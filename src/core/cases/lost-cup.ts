@@ -277,7 +277,7 @@ export const lostCup: Case = {
           ordered: false,
           mustUse: [],
           hints: [
-            "Назви стовпців є в схемі праворуч. Пиши їх через кому.",
+            "Назви стовпців є у вкладці «Таблиці бази». Пиши їх через кому.",
             "SELECT first_name, last_name, role FROM …"
           ],
           starter: "SELECT first_name FROM people",

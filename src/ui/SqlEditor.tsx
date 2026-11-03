@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react"
+import { useRef, type KeyboardEvent, type ReactNode } from "react"
 import { tokenize } from "./highlight.ts"
 
 interface Props {
@@ -7,13 +7,17 @@ interface Props {
   readonly onRun: () => void
   /** Called with a function that inserts text at the cursor, for the word buttons and the schema. */
   readonly inserterRef: { current: ((text: string) => void) | null }
+  /** Shown in the title bar of the editor window. */
+  readonly title: string
+  /** Buttons under the editor: Run and others. */
+  readonly toolbar: ReactNode
 }
 
 /** Words for one tap on a phone, where typing SQL is slow. */
 const CHIPS = ["SELECT", "*", "FROM", "WHERE", "AND", "=", ">=", "''", "ORDER BY", "DESC", "LIMIT", "LIKE", "'%%'", "COUNT(*)", "GROUP BY", "JOIN", "ON"]
 
 /** A textarea over a colored copy of the same text: simple SQL coloring without a code editor library. */
-export const SqlEditor = ({ value, onChange, onRun, inserterRef }: Props) => {
+export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar }: Props) => {
   const area = useRef<HTMLTextAreaElement>(null)
   const back = useRef<HTMLPreElement>(null)
 
@@ -51,7 +55,18 @@ export const SqlEditor = ({ value, onChange, onRun, inserterRef }: Props) => {
   }
 
   return (
-    <div className="edu-sql-editor-wrap">
+    <div className="edu-sql-term">
+      <div className="edu-sql-term-bar">
+        <span className="edu-sql-term-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="edu-sql-term-title">{title}</span>
+        <span className="edu-sql-term-db" aria-hidden="true">
+          SQLite
+        </span>
+      </div>
       <div className="edu-sql-editor">
         <pre ref={back} className="edu-sql-code" aria-hidden="true">
           {tokenize(value).map((t, i) => (
@@ -76,6 +91,7 @@ export const SqlEditor = ({ value, onChange, onRun, inserterRef }: Props) => {
           onScroll={sync}
         />
       </div>
+      <div className="edu-sql-term-tools">{toolbar}</div>
       <div className="edu-sql-chips" aria-label="Вставити слово SQL">
         {CHIPS.map((c) => (
           <button key={c} type="button" className="edu-sql-chip" onClick={() => insert(c)}>

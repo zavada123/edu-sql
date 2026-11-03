@@ -18,6 +18,8 @@ import {
 } from "../core/index.ts"
 import { loadSql } from "./loadSql.ts"
 import { ResultView } from "./ResultView.tsx"
+import { CaseMap } from "./CaseMap.tsx"
+import { Notebook } from "./Notebook.tsx"
 import { Robot } from "./Robot.tsx"
 import { Schema } from "./Schema.tsx"
 import { SqlEditor } from "./SqlEditor.tsx"
@@ -36,6 +38,9 @@ interface Props {
 
 const END = "end"
 
+/** The right panel shows the query result or the database schema. */
+type Tab = "result" | "schema"
+
 type Feedback = { readonly kind: "ok" } | { readonly kind: "wrong"; readonly text: string } | { readonly kind: "none" }
 
 /** The SQL detective trainer: a story, a database and a query editor. */
@@ -47,6 +52,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
   const [result, setResult] = useState<RunResult>()
   const [feedback, setFeedback] = useState<Feedback>({ kind: "none" })
   const [answer, setAnswer] = useState("")
+  const [tab, setTab] = useState<Tab>("result")
   const inserter = useRef<((text: string) => void) | null>(null)
 
   useEffect(() => {
@@ -77,6 +83,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
     setResult(undefined)
     setFeedback({ kind: "none" })
     setAnswer("")
+    setTab("result")
   }
 
   const solve = (s: Step) => {
@@ -89,6 +96,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
   const run = () => {
     if (!sandbox || !step) return
     setResult(sandbox.run(query))
+    setTab("result")
     if (step.kind !== "query" || solved) return
     const verdict = checkQuery(sandbox, step, query)
     if (verdict.kind === "ok") solve(step)
@@ -117,64 +125,71 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
   }
 
   const clues = steps.filter((s) => progress.solved.includes(s.id)).map((s) => s.clue)
+  const current = currentStep(c, progress)
+  const stepNumber = step ? steps.indexOf(step) + 1 : 0
+  const chapter = c.chapters.find((ch) => ch.steps.some((s) => s.id === viewing))
+  const setQuery = (v: string) => step && update({ ...progress, drafts: { ...progress.drafts, [step.id]: v } })
+  const report = makeReport(c, progress, "")
 
   return (
     <div className="edu-sql">
-      <header className="edu-sql-head">
-        <div>
-          <p className="edu-sql-kicker">SQL-детектив · {c.grades} клас</p>
-          <h2>{c.title}</h2>
-        </div>
-        <nav className="edu-sql-map" aria-label="Розділи справи">
-          {c.chapters.map((ch) => (
-            <div key={ch.id} className="edu-sql-chapter">
-              <span className="edu-sql-chapter-title" title={ch.topics}>{ch.title}</span>
-              <span className="edu-sql-dots">
-                {ch.steps.map((s) => {
-                  const done = progress.solved.includes(s.id)
-                  const reachable = done || s.id === currentStep(c, progress)?.id
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      disabled={!reachable}
-                      onClick={() => open(s.id)}
-                      className={`edu-sql-dot${done ? " is-done" : ""}${s.id === viewing ? " is-here" : ""}`}
-                      aria-label={`${s.title}${done ? " (розкрито)" : ""}`}
-                      title={s.title}
-                    />
-                  )
-                })}
-              </span>
-            </div>
-          ))}
-        </nav>
-      </header>
+      <CaseMap case={c} progress={progress} currentId={current?.id} viewing={viewing} onOpen={open} />
 
       {step === undefined ? (
         <section className="edu-sql-end">
+          <div className="edu-sql-stamp" aria-hidden="true">
+            Справу
+            <br />
+            розкрито
+          </div>
+          <Robot size={72} mood="happy" />
           <Story lines={c.ending} />
-          <Notebook clues={clues} />
-          <button type="button" className="edu-sql-btn" onClick={restart}>
-            Розслідувати знову
+          <dl className="edu-sql-stats">
+            <div>
+              <dt>Кроків</dt>
+              <dd>
+                {report.solvedSteps}/{report.totalSteps}
+              </dd>
+            </div>
+            <div>
+              <dt>Підказок</dt>
+              <dd>{Object.values(progress.hintsUsed).reduce((a, b) => a + b, 0)}</dd>
+            </div>
+            <div>
+              <dt>Оцінка</dt>
+              <dd>{Math.round(report.score * 100)}%</dd>
+            </div>
+          </dl>
+          <Notebook clues={clues} open />
+          <button type="button" className="edu-sql-btn edu-sql-btn-ghost" onClick={restart}>
+            ↺ Розслідувати знову
           </button>
         </section>
       ) : (
         <div className="edu-sql-grid">
           <section className="edu-sql-case" aria-label="Завдання">
+            <p className="edu-sql-step-label">
+              {chapter?.title} · крок {stepNumber} з {steps.length}
+            </p>
             <h3>{step.title}</h3>
             <Story lines={step.story} />
             <div className="edu-sql-task">
-              <strong>Завдання.</strong> {step.kind === "query" ? step.task : step.question}
+              <span className="edu-sql-task-icon" aria-hidden="true">
+                {step.kind === "query" ? "🎯" : "❓"}
+              </span>
+              <div>
+                <strong>{step.kind === "query" ? "Завдання" : "Питання"}</strong>
+                <p>{step.kind === "query" ? step.task : step.question}</p>
+              </div>
             </div>
             {step.kind === "answer" && (
               <form className="edu-sql-answer" onSubmit={submitAnswer}>
                 <input
-                  value={solved ? step.accepted[0] ?? "" : answer}
+                  value={solved ? (step.accepted[0] ?? "") : answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   disabled={solved}
                   aria-label="Відповідь"
-                  placeholder="Твоя відповідь"
+                  placeholder="Твоя відповідь…"
                 />
                 <button type="submit" className="edu-sql-btn" disabled={solved || answer.trim() === ""}>
                   Відповісти
@@ -185,67 +200,73 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved 
               <div className="edu-sql-hints">
                 {step.hints.slice(0, hintsShown).map((h, i) => (
                   <p key={i} className="edu-sql-hint">
-                    💡 {h}
+                    <span aria-hidden="true">💡</span> {h}
                   </p>
                 ))}
                 {hintsShown < step.hints.length && (
                   <button type="button" className="edu-sql-link" onClick={showHint}>
-                    {hintsShown === 0 ? "Підказка" : "Ще підказка"}
+                    {hintsShown === 0 ? "Потрібна підказка" : "Ще одна підказка"} ({hintsShown + 1}/{step.hints.length})
                   </button>
                 )}
               </div>
             )}
-            {feedback.kind === "wrong" && <p className="edu-sql-wrong" role="status">{feedback.text}</p>}
+            {feedback.kind === "wrong" && (
+              <p className="edu-sql-wrong" role="status">
+                <span aria-hidden="true">🤔</span> {feedback.text}
+              </p>
+            )}
             {solved && (
-              <div className="edu-sql-clue" role="status">
-                <Robot size={36} />
-                <div>
-                  <strong>{feedback.kind === "ok" ? "Правильно! Новий доказ:" : "Доказ:"}</strong>
-                  <p>{step.clue}</p>
-                  <button type="button" className="edu-sql-btn" onClick={goNext}>
-                    {currentStep(c, progress) ? "Далі →" : "До розгадки →"}
-                  </button>
+              <div className={`edu-sql-clue${feedback.kind === "ok" ? " is-new" : ""}`} role="status">
+                <div className="edu-sql-clue-head">
+                  <Robot size={40} mood="happy" />
+                  <strong>{feedback.kind === "ok" ? "Доказ знайдено!" : "Доказ"}</strong>
                 </div>
+                <p>{step.clue}</p>
+                <button type="button" className="edu-sql-btn" onClick={goNext}>
+                  {current ? "Далі →" : "До розгадки →"}
+                </button>
               </div>
             )}
-            <Notebook clues={clues} />
+            <Notebook clues={clues} open={false} />
           </section>
 
           <section className="edu-sql-work" aria-label="Запит до бази даних">
             <SqlEditor
               value={query}
-              onChange={(v) => update({ ...progress, drafts: { ...progress.drafts, [step.id]: v } })}
+              onChange={setQuery}
               onRun={run}
               inserterRef={inserter}
+              title={`ліцей.db — ${step.title}`}
+              toolbar={
+                <>
+                  <button type="button" className="edu-sql-btn edu-sql-btn-run" onClick={run} disabled={!sandbox}>
+                    <span aria-hidden="true">▶</span> Виконати
+                  </button>
+                  <button type="button" className="edu-sql-btn edu-sql-btn-ghost" onClick={() => setQuery("")} disabled={query === ""}>
+                    Очистити
+                  </button>
+                  <span className="edu-sql-term-hint">
+                    {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : sandbox ? "Ctrl + Enter" : "Завантажую базу даних…"}
+                  </span>
+                </>
+              }
             />
-            <div className="edu-sql-run">
-              <button type="button" className="edu-sql-btn edu-sql-btn-run" onClick={run} disabled={!sandbox}>
-                ▶ Виконати
-              </button>
-              <span className="edu-sql-muted">
-                {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : sandbox ? "Ctrl + Enter" : "Завантажую базу даних…"}
-              </span>
+            <div className="edu-sql-panel">
+              <div className="edu-sql-tabs" role="tablist" aria-label="Що показати">
+                <button type="button" role="tab" aria-selected={tab === "result"} className={tab === "result" ? "is-on" : ""} onClick={() => setTab("result")}>
+                  Результат
+                </button>
+                <button type="button" role="tab" aria-selected={tab === "schema"} className={tab === "schema" ? "is-on" : ""} onClick={() => setTab("schema")}>
+                  Таблиці бази <span className="edu-sql-badge">{c.tables.length}</span>
+                </button>
+              </div>
+              <div role="tabpanel" className="edu-sql-panel-body">
+                {tab === "result" ? <ResultView result={result} /> : <Schema tables={c.tables} onInsert={(t) => inserter.current?.(t)} />}
+              </div>
             </div>
-            {result && <ResultView result={result} />}
-            <details className="edu-sql-schema-box" open>
-              <summary>Таблиці бази даних</summary>
-              <Schema tables={c.tables} onInsert={(t) => inserter.current?.(t)} />
-            </details>
           </section>
         </div>
       )}
     </div>
   )
 }
-
-const Notebook = ({ clues }: { readonly clues: readonly string[] }) =>
-  clues.length === 0 ? null : (
-    <details className="edu-sql-notebook">
-      <summary>📒 Блокнот детектива ({clues.length})</summary>
-      <ol>
-        {clues.map((c, i) => (
-          <li key={i}>{c}</li>
-        ))}
-      </ol>
-    </details>
-  )

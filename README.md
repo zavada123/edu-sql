@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="edu-sql: the robot explains JOIN, the student's query and its result" width="800">
+  <img src="docs/screenshot.png" alt="edu-sql: the case dossier with the robot guide, the query terminal and the result panel" width="800">
 </p>
 
 ## Why
@@ -33,7 +33,7 @@ The student-facing interface is in Ukrainian. It was built for [EduProstir](http
 - **Phone friendly:** one-tap SQL word buttons, and a tap on a table or column name in the schema inserts it into the query.
 - **Protection from runaway queries:** a query that returns more than 5000 rows (for example, a join without `ON`) stops with a message.
 
-Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `BETWEEN` and `JOIN` in 13 steps (grades 7–11).
+Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `BETWEEN` and `JOIN` in 14 steps (grades 7–11).
 
 ## Installation
 
@@ -66,8 +66,8 @@ Render the component only in the browser: it loads SQLite in an effect.
 {
   "caseId": "lost-cup",
   "stepId": "culprit",
-  "solvedSteps": 13,
-  "totalSteps": 13,
+  "solvedSteps": 14,
+  "totalSteps": 14,
   "finished": true,
   "score": 0.94,
   "progress": { "caseId": "lost-cup", "solved": ["rooms", "…"], "drafts": {}, "hintsUsed": { "forum": 1 } }
