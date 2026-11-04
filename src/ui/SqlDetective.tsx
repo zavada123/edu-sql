@@ -16,6 +16,9 @@ import {
   type RunResult,
   type Step
 } from "../core/index.ts"
+import { Lesson } from "./Lesson.tsx"
+import { RichText } from "./RichText.tsx"
+import { useFullScreen } from "./useFullScreen.ts"
 import { loadSql } from "./loadSql.ts"
 import { ResultView } from "./ResultView.tsx"
 import { CaseMap } from "./CaseMap.tsx"
@@ -56,6 +59,8 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
   const [answer, setAnswer] = useState("")
   const [tab, setTab] = useState<Tab>("result")
   const inserter = useRef<((text: string) => void) | null>(null)
+  const root = useRef<HTMLDivElement>(null)
+  const screen = useFullScreen(root)
 
   useEffect(() => {
     let alive = true
@@ -72,7 +77,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
   const steps = useMemo(() => allSteps(c), [c])
   const step: Step | undefined = steps.find((s) => s.id === viewing)
   const solved = step !== undefined && progress.solved.includes(step.id)
-  const query = step ? (progress.drafts[step.id] ?? (step.kind === "query" ? step.starter : "")) : ""
+  const query = step ? (progress.drafts[step.id] ?? (step.kind === "query" ? step.starter : step.kind === "lesson" ? step.example : "")) : ""
   const hintsShown = step ? (progress.hintsUsed[step.id] ?? 0) : 0
 
   const update = (next: Progress) => {
@@ -120,13 +125,20 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
 
   const goNext = () => open(currentStep(c, progress)?.id ?? END)
 
+  /** A lesson is read: mark it and open the next step. */
+  const finishLesson = (s: Step) => {
+    const next = markSolved(progress, s.id, "")
+    if (next !== progress) update(next)
+    open(currentStep(c, next)?.id ?? END)
+  }
+
   const restart = () => {
     const fresh = emptyProgress(c)
     update(fresh)
     open(steps[0]?.id ?? END)
   }
 
-  const clues = steps.filter((s) => progress.solved.includes(s.id)).map((s) => s.clue)
+  const clues = steps.flatMap((s) => (s.kind !== "lesson" && progress.solved.includes(s.id) ? [s.clue] : []))
   const current = currentStep(c, progress)
   const stepNumber = step ? steps.indexOf(step) + 1 : 0
   const chapter = c.chapters.find((ch) => ch.steps.some((s) => s.id === viewing))
@@ -134,8 +146,26 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
   const report = makeReport(c, progress, "")
 
   return (
-    <div className="edu-sql">
-      <CaseMap case={c} progress={progress} currentId={current?.id} viewing={viewing} onOpen={open} />
+    <div ref={root} className={`edu-sql${screen.on ? " is-full" : ""}`}>
+      <CaseMap
+        case={c}
+        progress={progress}
+        currentId={current?.id}
+        viewing={viewing}
+        onOpen={open}
+        actions={
+          <button
+            type="button"
+            className="edu-sql-full-btn"
+            onClick={screen.toggle}
+            aria-pressed={screen.on}
+            title={screen.on ? "Вийти з повного екрана (Esc)" : "На весь екран"}
+          >
+            <span aria-hidden="true">{screen.on ? "✕" : "⛶"}</span>
+            <span className="edu-sql-full-label">{screen.on ? "Згорнути" : "На весь екран"}</span>
+          </button>
+        }
+      />
 
       {step === undefined ? (
         <section className="edu-sql-end">
@@ -176,59 +206,74 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
             </p>
             <h3 className="edu-sql-step-title">{step.title}</h3>
             <Story lines={step.story} />
-            <div className="edu-sql-task">
-              <span className="edu-sql-task-icon" aria-hidden="true">
-                {step.kind === "query" ? "🎯" : "❓"}
-              </span>
-              <div>
-                <strong>{step.kind === "query" ? "Завдання" : "Питання"}</strong>
-                <p>{step.kind === "query" ? step.task : step.question}</p>
-              </div>
-            </div>
-            {step.kind === "answer" && (
-              <form className="edu-sql-answer" onSubmit={submitAnswer}>
-                <input
-                  value={solved ? (step.accepted[0] ?? "") : answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  disabled={solved}
-                  aria-label="Відповідь"
-                  placeholder="Твоя відповідь…"
-                />
-                <button type="submit" className="edu-sql-btn" disabled={solved || answer.trim() === ""}>
-                  Відповісти
+            {step.kind === "lesson" ? (
+              <>
+                <Lesson step={step} />
+                <button type="button" className="edu-sql-btn edu-sql-lesson-next" onClick={() => finishLesson(step)}>
+                  {solved ? "Далі →" : "Зрозуміло, далі →"}
                 </button>
-              </form>
-            )}
-            {!solved && step.hints.length > 0 && (
-              <div className="edu-sql-hints">
-                {step.hints.slice(0, hintsShown).map((h, i) => (
-                  <p key={i} className="edu-sql-hint">
-                    <span aria-hidden="true">💡</span> {h}
-                  </p>
-                ))}
-                {hintsShown < step.hints.length && (
-                  <button type="button" className="edu-sql-link" onClick={showHint}>
-                    {hintsShown === 0 ? "Потрібна підказка" : "Ще одна підказка"} ({hintsShown + 1}/{step.hints.length})
-                  </button>
-                )}
-              </div>
-            )}
-            {feedback.kind === "wrong" && (
-              <p className="edu-sql-wrong" role="status">
-                <span aria-hidden="true">🤔</span> {feedback.text}
-              </p>
-            )}
-            {solved && (
-              <div className={`edu-sql-clue${feedback.kind === "ok" ? " is-new" : ""}`} role="status">
-                <div className="edu-sql-clue-head">
-                  <Robot size={40} mood="happy" />
-                  <strong>{feedback.kind === "ok" ? "Доказ знайдено!" : "Доказ"}</strong>
+              </>
+            ) : (
+              <>
+                <div className="edu-sql-task">
+                  <span className="edu-sql-task-icon" aria-hidden="true">
+                    {step.kind === "query" ? "🎯" : "❓"}
+                  </span>
+                  <div>
+                    <strong>{step.kind === "query" ? "Завдання" : "Питання"}</strong>
+                    <p>
+                      <RichText text={step.kind === "query" ? step.task : step.question} />
+                    </p>
+                  </div>
                 </div>
-                <p>{step.clue}</p>
-                <button type="button" className="edu-sql-btn" onClick={goNext}>
-                  {current ? "Далі →" : "До розгадки →"}
-                </button>
-              </div>
+                {step.kind === "answer" && (
+                  <form className="edu-sql-answer" onSubmit={submitAnswer}>
+                    <input
+                      value={solved ? (step.accepted[0] ?? "") : answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      disabled={solved}
+                      aria-label="Відповідь"
+                      placeholder="Твоя відповідь…"
+                    />
+                    <button type="submit" className="edu-sql-btn" disabled={solved || answer.trim() === ""}>
+                      Відповісти
+                    </button>
+                  </form>
+                )}
+                {!solved && step.hints.length > 0 && (
+                  <div className="edu-sql-hints">
+                    {step.hints.slice(0, hintsShown).map((h, i) => (
+                      <p key={i} className="edu-sql-hint">
+                        <span aria-hidden="true">💡</span> <RichText text={h} />
+                      </p>
+                    ))}
+                    {hintsShown < step.hints.length && (
+                      <button type="button" className="edu-sql-link" onClick={showHint}>
+                        {hintsShown === 0 ? "Потрібна підказка" : "Ще одна підказка"} ({hintsShown + 1}/{step.hints.length})
+                      </button>
+                    )}
+                  </div>
+                )}
+                {feedback.kind === "wrong" && (
+                  <p className="edu-sql-wrong" role="status">
+                    <span aria-hidden="true">🤔</span> <RichText text={feedback.text} />
+                  </p>
+                )}
+                {solved && (
+                  <div className={`edu-sql-clue${feedback.kind === "ok" ? " is-new" : ""}`} role="status">
+                    <div className="edu-sql-clue-head">
+                      <Robot size={40} mood="happy" />
+                      <strong>{feedback.kind === "ok" ? "Доказ знайдено!" : "Доказ"}</strong>
+                    </div>
+                    <p>
+                      <RichText text={step.clue} />
+                    </p>
+                    <button type="button" className="edu-sql-btn" onClick={goNext}>
+                      {current ? "Далі →" : "До розгадки →"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
             <Notebook clues={clues} open={false} />
           </section>

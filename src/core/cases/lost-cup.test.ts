@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { allSteps, caseScore, checkAnswer, checkCase, checkQuery } from "../check.ts"
+import { allSteps, caseScore, checkAnswer, checkCase, checkQuery, currentStep, emptyProgress, isStepDone, taskSteps } from "../check.ts"
 import { Sandbox } from "../run.ts"
 import { loadSqlForTests } from "../testing.ts"
 import { lostCup } from "./lost-cup.ts"
@@ -23,7 +23,7 @@ describe("case «lost cup»", () => {
   })
 
   it("accepts every reference solution", () => {
-    for (const step of allSteps(lostCup)) {
+    for (const step of taskSteps(lostCup)) {
       if (step.kind === "query") expect(checkQuery(sandbox, step, step.solution), step.id).toEqual({ kind: "ok" })
       else expect(checkAnswer(step, step.accepted[0] ?? ""), step.id).toEqual({ kind: "ok" })
     }
@@ -62,7 +62,7 @@ describe("case «lost cup»", () => {
   })
 
   it("checks the whole case again from saved answers", () => {
-    const answers = Object.fromEntries(allSteps(lostCup).map((s) => [s.id, s.kind === "query" ? s.solution : (s.accepted[0] ?? "")]))
+    const answers = Object.fromEntries(taskSteps(lostCup).map((s) => [s.id, s.kind === "query" ? s.solution : (s.accepted[0] ?? "")]))
     expect(checkCase(sandbox, lostCup, answers).every((r) => r.passed)).toBe(true)
     const forged = { ...answers, culprit: "Марко Ковальчук", rooms: "SELECT 1" }
     expect(checkCase(sandbox, lostCup, forged).filter((r) => !r.passed).map((r) => r.stepId)).toEqual(["rooms", "culprit"])
@@ -71,10 +71,36 @@ describe("case «lost cup»", () => {
   })
 
   it("scores the case by hints", () => {
-    const all = allSteps(lostCup).map((s) => s.id)
+    const all = taskSteps(lostCup).map((s) => s.id)
+    expect(caseScore(lostCup, allSteps(lostCup).map((s) => s.id), {})).toBe(1)
     expect(caseScore(lostCup, all, {})).toBe(1)
     expect(caseScore(lostCup, all, { rooms: 1 })).toBeCloseTo(1 - 0.25 / all.length, 2)
     expect(caseScore(lostCup, all, { rooms: 9 })).toBeCloseTo(1 - 0.5 / all.length, 2)
     expect(caseScore(lostCup, [], {})).toBe(0)
+  })
+
+  it("runs the example of every lesson, and every lesson comes before the tasks of its chapter", () => {
+    const lessons = allSteps(lostCup).flatMap((s) => (s.kind === "lesson" ? [s] : []))
+    expect(lessons.map((l) => l.id)).toEqual(["lesson-select", "lesson-where", "lesson-order", "lesson-like", "lesson-count", "lesson-join"])
+    for (const l of lessons) expect(sandbox.run(l.example).kind, l.id).toBe("table")
+  })
+
+  it("closes every SQL mark in the texts", () => {
+    const texts = [
+      ...lostCup.ending.map((l) => l.text),
+      ...allSteps(lostCup).flatMap((s) => [
+        ...s.story.map((l) => l.text),
+        ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, s.kind === "query" ? s.task : s.question])
+      ])
+    ]
+    for (const t of texts) expect((t.match(/`/g) ?? []).length % 2, t).toBe(0)
+  })
+
+  it("does not send a student back to a lesson that was added after a later step was solved", () => {
+    const old = { ...emptyProgress(lostCup), solved: ["rooms", "people", "lab-log"] }
+    expect(isStepDone(lostCup, old, "lesson-select")).toBe(true)
+    expect(isStepDone(lostCup, old, "lesson-order")).toBe(false)
+    expect(currentStep(lostCup, old)?.id).toBe("lab-thursday")
+    expect(currentStep(lostCup, emptyProgress(lostCup))?.id).toBe("lesson-select")
   })
 })

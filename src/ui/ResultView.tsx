@@ -1,4 +1,5 @@
 import { plural, type RunResult } from "../core/index.ts"
+import { RichText } from "./RichText.tsx"
 
 /** Rows shown on the page; the count above the table is always the full one. */
 const SHOW_ROWS = 200
@@ -15,7 +16,9 @@ export const ResultView = ({ result }: { readonly result: RunResult | undefined 
     return (
       <div className="edu-sql-error" role="alert">
         <strong>Помилка в запиті</strong>
-        <p>{result.message}</p>
+        <p>
+          <RichText text={result.message} />
+        </p>
         {result.raw !== result.message && <code>{result.raw}</code>}
       </div>
     )

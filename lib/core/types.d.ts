@@ -35,6 +35,7 @@ export interface TableInfo {
 }
 /** Who speaks a story line. The cases use the robot assistant and the student detective. */
 export type Speaker = "robot" | "narrator" | "witness";
+/** In all texts of a case, words in `backticks` are SQL: the trainer shows them as code. */
 export interface StoryLine {
     readonly speaker: Speaker;
     readonly text: string;
@@ -73,7 +74,31 @@ export interface AnswerStep {
     readonly hints: readonly string[];
     readonly clue: string;
 }
-export type Step = QueryStep | AnswerStep;
+/** One SQL word or sign and what it means, for the table of a lesson. */
+export interface LessonNote {
+    readonly code: string;
+    readonly text: string;
+}
+/**
+ * A step that explains SQL words before the tasks that use them. The student reads it, runs the example
+ * and changes it if they want. The step is not checked and does not change the score.
+ */
+export interface LessonStep {
+    readonly kind: "lesson";
+    readonly id: string;
+    readonly title: string;
+    readonly story: readonly StoryLine[];
+    /** What the words do and why, one paragraph per item. */
+    readonly explain: readonly string[];
+    /** The general form, for example "SELECT стовпці FROM таблиця". */
+    readonly syntax: string;
+    readonly notes: readonly LessonNote[];
+    /** A query that the editor starts with, so that the student can run it at once. */
+    readonly example: string;
+}
+/** A step that the student must solve: a query or an answer. */
+export type TaskStep = QueryStep | AnswerStep;
+export type Step = TaskStep | LessonStep;
 export interface Chapter {
     readonly id: string;
     readonly title: string;
@@ -146,11 +171,12 @@ export interface StepCheck {
 export interface Report {
     readonly caseId: string;
     readonly stepId: string;
+    /** Solved task steps; lessons are not counted. */
     readonly solvedSteps: number;
     readonly totalSteps: number;
-    /** True when the whole case is solved. */
+    /** True when all task steps are solved. */
     readonly finished: boolean;
-    /** From 0 to 1: each solved step gives 1, minus 0.25 per hint, but at least 0.5. */
+    /** From 0 to 1: each solved task step gives 1, minus 0.25 per hint, but at least 0.5. */
     readonly score: number;
     readonly progress: Progress;
 }

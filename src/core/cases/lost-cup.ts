@@ -2,7 +2,7 @@ import type { Case } from "../types.ts"
 
 /**
  * Case 1: the robotics cup is gone from the lab the day before the olympiad.
- * Topics: SELECT, WHERE, AND, ORDER BY, LIMIT, LIKE, COUNT, GROUP BY, JOIN.
+ * Topics: SELECT, FROM, WHERE, AND, ORDER BY, LIMIT, LIKE, COUNT, GROUP BY, JOIN.
  * The answer is Марія Шевчук (person 6): she was in the lab 18:20–18:42,
  * the witness saw «Ма…» at 18:42, and Марко has an alibi in the canteen at 18:41.
  */
@@ -240,6 +240,25 @@ export const lostCup: Case = {
       topics: "SELECT, FROM",
       steps: [
         {
+          kind: "lesson",
+          id: "lesson-select",
+          title: "Урок: SELECT і FROM",
+          story: [{ speaker: "robot", text: "Перш ніж шукати кубок, навчимося говорити з базою даних. Це коротенький урок, тут нічого не треба розв'язувати." }],
+          explain: [
+            "База даних схожа на шафу з таблицями. Кожна таблиця має назву, стовпці (що саме записано) і рядки (окремі записи). Наприклад, у таблиці `rooms` один рядок означає одну кімнату ліцею.",
+            "Запит SQL є питанням до бази. Найчастіше він починається словами `SELECT` («вибери») і `FROM` («з таблиці»).",
+            "Після `SELECT` пишуть, які стовпці показати, через кому. Після `FROM` пишуть, з якої таблиці їх узяти. Зірочка `*` означає «усі стовпці»."
+          ],
+          syntax: "SELECT стовпець1, стовпець2 FROM таблиця",
+          notes: [
+            { code: "SELECT", text: "які стовпці показати" },
+            { code: "FROM", text: "з якої таблиці брати рядки" },
+            { code: "*", text: "усі стовпці" },
+            { code: ",", text: "розділяє назви стовпців" }
+          ],
+          example: "SELECT name, floor FROM rooms"
+        },
+        {
           kind: "query",
           id: "rooms",
           title: "Перший запит",
@@ -251,10 +270,10 @@ export const lostCup: Case = {
             },
             {
               speaker: "robot",
-              text: "Запит SELECT * FROM rooms означає «покажи всі стовпці (*) з таблиці rooms». Я вже написав його. Натисни «Виконати»."
+              text: "Почнемо з кімнат. Запит `SELECT * FROM rooms` означає «покажи всі стовпці з таблиці `rooms`». Я вже написав його. Натисни «Виконати»."
             }
           ],
-          task: "Покажи всі рядки й усі стовпці таблиці rooms.",
+          task: "Покажи всі рядки й усі стовпці таблиці `rooms`.",
           solution: "SELECT * FROM rooms",
           ordered: false,
           mustUse: [],
@@ -269,16 +288,16 @@ export const lostCup: Case = {
           story: [
             {
               speaker: "robot",
-              text: "Таблиця people велика. Щоб не бачити зайвого, після SELECT можна перелічити потрібні стовпці через кому, наприклад SELECT first_name, class FROM people."
+              text: "Таблиця `people` велика. Щоб не бачити зайвого, після `SELECT` перелічи потрібні стовпці через кому, наприклад `SELECT first_name, class FROM people`."
             }
           ],
-          task: "Покажи ім'я, прізвище й роль кожної людини: стовпці first_name, last_name, role з таблиці people.",
+          task: "Покажи ім'я, прізвище й роль кожної людини: стовпці `first_name`, `last_name`, `role` з таблиці `people`.",
           solution: "SELECT first_name, last_name, role FROM people",
           ordered: false,
           mustUse: [],
           hints: [
             "Назви стовпців є у вкладці «Таблиці бази». Пиши їх через кому.",
-            "SELECT first_name, last_name, role FROM …"
+            "`SELECT first_name, last_name, role FROM …`"
           ],
           starter: "SELECT first_name FROM people",
           clue: "У ліцеї 20 людей у базі. Серед дорослих: вчителі Тетяна Бондар та Ігор Савчук, охоронець Олег Іваненко і прибиральниця Галина Петрук."
@@ -291,20 +310,41 @@ export const lostCup: Case = {
       topics: "WHERE, AND",
       steps: [
         {
+          kind: "lesson",
+          id: "lesson-where",
+          title: "Урок: WHERE, AND, OR",
+          story: [{ speaker: "robot", text: "Тепер найважливіше слово детектива. Воно допомагає знайти в таблиці лише потрібні рядки." }],
+          explain: [
+            "У таблиці можуть бути тисячі рядків, а потрібні лише деякі. `WHERE` («де») залишає тільки ті рядки, що підходять під умову.",
+            "Умова порівнює стовпець зі значенням. Числа пишуть як є: `floor = 2`. Текст і дати беруть в одинарні лапки: `name = 'Склад'`.",
+            "Кілька умов з'єднують словом `AND` («і»): тоді рядок має підійти під усі умови. Слово `OR` («або») залишає рядок, якщо підходить хоча б одна умова."
+          ],
+          syntax: "SELECT стовпці FROM таблиця WHERE умова AND ще_умова",
+          notes: [
+            { code: "=", text: "дорівнює" },
+            { code: "<>", text: "не дорівнює" },
+            { code: "> < >= <=", text: "більше, менше, більше або дорівнює, менше або дорівнює" },
+            { code: "AND", text: "мають виконатися обидві умови" },
+            { code: "OR", text: "має виконатися хоча б одна умова" },
+            { code: "'текст'", text: "текст і дати завжди в одинарних лапках" }
+          ],
+          example: "SELECT * FROM rooms WHERE floor = 2"
+        },
+        {
           kind: "query",
           id: "lab-log",
           title: "Журнал лабораторії",
           story: [
             {
               speaker: "robot",
-              text: "На дверях кожної кімнати є зчитувач перепусток. Усі проходи записано в таблицю access_log. Щоб вибрати лише деякі рядки, додай WHERE з умовою: WHERE floor = 2."
+              text: "На дверях кожної кімнати є зчитувач перепусток. Усі проходи записано в таблицю `access_log`. Щоб вибрати лише деякі рядки, додай `WHERE` з умовою."
             }
           ],
-          task: "Покажи всі стовпці тих записів access_log, які стосуються лабораторії (room_id дорівнює 214).",
+          task: "Покажи всі стовпці тих записів `access_log`, які стосуються лабораторії (`room_id` дорівнює 214).",
           solution: "SELECT * FROM access_log WHERE room_id = 214",
           ordered: false,
           mustUse: ["WHERE"],
-          hints: ["Почни з SELECT * FROM access_log, а потім допиши умову.", "SELECT * FROM access_log WHERE room_id = …"],
+          hints: ["Почни з `SELECT * FROM access_log`, а потім допиши умову.", "`SELECT * FROM access_log WHERE room_id = …`"],
           starter: "",
           clue: "У лабораторію за три дні заходили багато разів. Треба звузити пошук до четверга."
         },
@@ -315,14 +355,14 @@ export const lostCup: Case = {
           story: [
             {
               speaker: "robot",
-              text: "Дві умови з'єднують словом AND: тоді рядок має підійти під обидві. Текст і дати в SQL беруть в одинарні лапки: day = '2026-10-15'."
+              text: "Дві умови з'єднують словом `AND`: тоді рядок має підійти під обидві. Текст і дати в SQL беруть в одинарні лапки: `day = '2026-10-15'`."
             }
           ],
-          task: "Покажи всі стовпці записів access_log для лабораторії 214 за 15 жовтня ('2026-10-15').",
+          task: "Покажи всі стовпці записів `access_log` для лабораторії 214 за 15 жовтня (`'2026-10-15'`).",
           solution: "SELECT * FROM access_log WHERE room_id = 214 AND day = '2026-10-15'",
           ordered: false,
           mustUse: ["AND"],
-          hints: ["Візьми попередній запит і допиши AND та ще одну умову.", "… WHERE room_id = 214 AND day = '2026-10-15'"],
+          hints: ["Візьми попередній запит і допиши `AND` та ще одну умову.", "`… WHERE room_id = 214 AND day = '2026-10-15'`"],
           starter: "",
           clue: "Учителька Тетяна Бондар вийшла з лабораторії о 17:00. Вона каже, що тоді кубок ще стояв на полиці."
         },
@@ -333,16 +373,16 @@ export const lostCup: Case = {
           story: [
             {
               speaker: "robot",
-              text: "Час записано як текст '17:45'. Такі рядки можна порівнювати знаками >, <, >=, <=, бо години й хвилини завжди з двох цифр."
+              text: "Час записано як текст `'17:45'`. Такі рядки можна порівнювати знаками `>`, `<`, `>=`, `<=`, бо години й хвилини завжди з двох цифр."
             }
           ],
-          task: "Покажи всі стовпці записів, коли хтось заходив ('вхід') у лабораторію 214 15 жовтня о 17:00 або пізніше.",
+          task: "Покажи всі стовпці записів, коли хтось заходив (`'вхід'`) у лабораторію 214 15 жовтня о 17:00 або пізніше.",
           solution: "SELECT * FROM access_log WHERE room_id = 214 AND day = '2026-10-15' AND action = 'вхід' AND time >= '17:00'",
           ordered: false,
           mustUse: [],
           hints: [
-            "Умов тут чотири: кімната, день, дія і час. Усі з'єднай через AND.",
-            "Для часу використай time >= '17:00', а для дії action = 'вхід'."
+            "Умов тут чотири: кімната, день, дія і час. Усі з'єднай через `AND`.",
+            "Для часу використай `time >= '17:00'`, а для дії `action = 'вхід'`."
           ],
           starter: "",
           clue: "Після 17:00 у лабораторію заходили люди з номерами 4, 5, 6, 3 і 2."
@@ -354,7 +394,7 @@ export const lostCup: Case = {
           story: [{ speaker: "robot", text: "Подивись на результат останнього запиту." }],
           question: "Скільки різних людей заходило в лабораторію 15 жовтня після 17:00? Напиши число.",
           accepted: ["5", "п'ять"],
-          hints: ["Порахуй різні значення в стовпці person_id."],
+          hints: ["Порахуй різні значення в стовпці `person_id`."],
           clue: "Прибиральниця Галина Петрук (номер 3) прийшла о 19:00 і каже, що полиця вже була порожня. Отже, кубок зник між 17:00 і 19:00."
         }
       ]
@@ -365,26 +405,65 @@ export const lostCup: Case = {
       topics: "ORDER BY, LIMIT, LIKE",
       steps: [
         {
+          kind: "lesson",
+          id: "lesson-order",
+          title: "Урок: ORDER BY і LIMIT",
+          story: [{ speaker: "robot", text: "Щоб дізнатися, хто був першим чи останнім, рядки треба впорядкувати." }],
+          explain: [
+            "Рядки в результаті можуть іти в будь-якому порядку. `ORDER BY` («упорядкуй за») сортує їх за вибраним стовпцем.",
+            "Звичайно, або з `ASC`, рядки йдуть за зростанням: від меншого числа до більшого, від А до Я, від раннього часу до пізнього. Слово `DESC` сортує навпаки.",
+            "`LIMIT` обмежує кількість рядків. `LIMIT 1` залишає лише перший рядок. Разом із `ORDER BY` так знаходять найбільше, найменше чи найпізніше.",
+            "Порядок слів у запиті важливий: спочатку `WHERE`, потім `ORDER BY`, а `LIMIT` у самому кінці."
+          ],
+          syntax: "SELECT … FROM … WHERE … ORDER BY стовпець DESC LIMIT кількість",
+          notes: [
+            { code: "ORDER BY", text: "сортує рядки за стовпцем" },
+            { code: "ASC", text: "за зростанням (так буде, якщо нічого не писати)" },
+            { code: "DESC", text: "за спаданням" },
+            { code: "LIMIT 3", text: "показати лише перші 3 рядки" }
+          ],
+          example: "SELECT name, floor FROM rooms ORDER BY floor DESC LIMIT 3"
+        },
+        {
           kind: "query",
           id: "last-exit",
           title: "Останній, хто вийшов",
           story: [
             {
               speaker: "robot",
-              text: "ORDER BY time сортує рядки за часом, а ORDER BY time DESC навпаки, від пізнього до раннього. LIMIT 1 залишає лише перший рядок."
+              text: "Хто вийшов з лабораторії останнім перед приходом прибиральниці? Відсортуй виходи від пізнього до раннього (`ORDER BY time DESC`) і залиш перший рядок (`LIMIT 1`)."
             }
           ],
-          task: "Знайди останній вихід ('вихід') з лабораторії 214 15 жовтня до 19:00 (time < '19:00'). Покажи всі стовпці, лише один рядок.",
+          task: "Знайди останній вихід (`'вихід'`) з лабораторії 214 15 жовтня до 19:00 (`time < '19:00'`). Покажи всі стовпці, лише один рядок.",
           solution:
             "SELECT * FROM access_log WHERE room_id = 214 AND day = '2026-10-15' AND action = 'вихід' AND time < '19:00' ORDER BY time DESC LIMIT 1",
           ordered: true,
           mustUse: ["ORDER BY", "LIMIT"],
           hints: [
             "Спочатку вибери всі виходи до 19:00, потім відсортуй їх за часом від пізнього.",
-            "… AND action = 'вихід' AND time < '19:00' ORDER BY time DESC LIMIT 1"
+            "`… AND action = 'вихід' AND time < '19:00' ORDER BY time DESC LIMIT 1`"
           ],
           starter: "",
           clue: "Останньою до приходу прибиральниці з лабораторії вийшла людина номер 6, о 18:42."
+        },
+        {
+          kind: "lesson",
+          id: "lesson-like",
+          title: "Урок: LIKE і %",
+          story: [{ speaker: "robot", text: "А що як ми знаємо лише частину тексту? Для цього є пошук за шаблоном." }],
+          explain: [
+            "Знак `=` шукає точний збіг: `name = 'Склад'`. Але часто ми знаємо лише шматочок тексту. Тоді допоможе `LIKE` («схоже на»).",
+            "У шаблоні знак `%` означає «будь-які символи, навіть жодного». Шаблон `'Ко%'` означає «починається на Ко», `'%ко'` означає «закінчується на ко», а `'%кубок%'` означає «містить слово кубок будь-де».",
+            "Знак `_` означає рівно один будь-який символ."
+          ],
+          syntax: "WHERE стовпець LIKE 'шаблон'",
+          notes: [
+            { code: "LIKE", text: "шукає текст за шаблоном" },
+            { code: "%", text: "будь-які символи, скільки завгодно" },
+            { code: "_", text: "рівно один символ" },
+            { code: "'%слово%'", text: "текст, у якому є це слово" }
+          ],
+          example: "SELECT first_name, last_name FROM people WHERE last_name LIKE 'Ко%'"
         },
         {
           kind: "query",
@@ -393,15 +472,15 @@ export const lostCup: Case = {
           story: [
             {
               speaker: "robot",
-              text: "Щоб знайти текст, у якому є якесь слово, використовують LIKE і знак %. Він означає «будь-які символи». Умова text LIKE '%флешк%' знайде всі повідомлення про флешку."
+              text: "Може, хтось щось бачив і написав на форумі? Шукай слово «кубок» у тексті повідомлень за допомогою `LIKE` і `%`."
             },
-            { speaker: "robot", text: "Увага: для українських літер LIKE розрізняє великі й малі. Пиши слово так, як воно стоїть усередині речення." }
+            { speaker: "robot", text: "Увага: для українських літер `LIKE` розрізняє великі й малі. Пиши слово так, як воно стоїть усередині речення." }
           ],
-          task: "Знайди всі повідомлення з таблиці posts, у тексті яких є слово «кубок». Покажи всі стовпці.",
+          task: "Знайди всі повідомлення з таблиці `posts`, у тексті яких є слово «кубок». Покажи всі стовпці.",
           solution: "SELECT * FROM posts WHERE text LIKE '%кубок%'",
           ordered: false,
           mustUse: ["LIKE"],
-          hints: ["SELECT * FROM posts WHERE text LIKE '…'", "Візьми слово в знаки відсотка з обох боків: '%кубок%'."],
+          hints: ["`SELECT * FROM posts WHERE text LIKE '…'`", "Візьми слово в знаки відсотка з обох боків: `'%кубок%'`."],
           starter: "",
           clue: "Свідок, учениця Вероніка Поліщук, о 18:42 бачила біля лабораторії когось із великим пакетом. Ім'я на бейджі починалося на «Ма»."
         },
@@ -410,13 +489,13 @@ export const lostCup: Case = {
           id: "ma-names",
           title: "Ім'я на «Ма»",
           story: [
-            { speaker: "robot", text: "LIKE 'Ма%' означає «починається на Ма, а далі що завгодно». Відсортуй результат, щоб список було зручно читати." }
+            { speaker: "robot", text: "`LIKE 'Ма%'` означає «починається на Ма, а далі що завгодно». Відсортуй результат, щоб список було зручно читати." }
           ],
-          task: "Покажи всіх людей (усі стовпці people), чиє ім'я починається на «Ма». Відсортуй за прізвищем (last_name) за абеткою.",
+          task: "Покажи всіх людей (усі стовпці `people`), чиє ім'я починається на «Ма». Відсортуй за прізвищем (`last_name`) за абеткою.",
           solution: "SELECT * FROM people WHERE first_name LIKE 'Ма%' ORDER BY last_name",
           ordered: true,
           mustUse: ["LIKE", "ORDER BY"],
-          hints: ["WHERE first_name LIKE 'Ма%'", "Наприкінці додай ORDER BY last_name."],
+          hints: ["`WHERE first_name LIKE 'Ма%'`", "Наприкінці додай `ORDER BY last_name`."],
           starter: "",
           clue: "Ім'я на «Ма» мають четверо: Марко Ковальчук (5), Максим Лисенко (7), Мар'яна Олійник (8) і Марія Шевчук (6)."
         }
@@ -428,15 +507,34 @@ export const lostCup: Case = {
       topics: "COUNT, GROUP BY",
       steps: [
         {
+          kind: "lesson",
+          id: "lesson-count",
+          title: "Урок: COUNT і GROUP BY",
+          story: [{ speaker: "robot", text: "Детективу часто потрібна не таблиця, а число: скільки записів, скільки разів. Навчимося рахувати." }],
+          explain: [
+            "`COUNT(*)` рахує рядки. Запит `SELECT COUNT(*) FROM rooms` поверне одне число: скільки кімнат у ліцеї. Разом із `WHERE` він рахує лише рядки, що підходять під умову.",
+            "`GROUP BY` ділить рядки на групи з однаковим значенням стовпця. Тоді `COUNT(*)` рахує рядки в кожній групі окремо. Наприклад, `GROUP BY floor` дасть кількість кімнат на кожному поверсі.",
+            "Крім `COUNT`, є й інші функції для груп: `SUM` (сума), `AVG` (середнє), `MIN` (найменше) і `MAX` (найбільше)."
+          ],
+          syntax: "SELECT стовпець, COUNT(*) FROM таблиця GROUP BY стовпець",
+          notes: [
+            { code: "COUNT(*)", text: "кількість рядків" },
+            { code: "GROUP BY", text: "ділить рядки на групи" },
+            { code: "SUM, AVG", text: "сума і середнє значення" },
+            { code: "MIN, MAX", text: "найменше і найбільше значення" }
+          ],
+          example: "SELECT floor, COUNT(*) FROM rooms GROUP BY floor"
+        },
+        {
           kind: "query",
           id: "count-all",
           title: "Скільки записів",
-          story: [{ speaker: "robot", text: "COUNT(*) рахує рядки. SELECT COUNT(*) FROM rooms поверне одне число: кількість кімнат." }],
-          task: "Порахуй, скільки всього записів у журналі перепусток access_log.",
+          story: [{ speaker: "robot", text: "Скільки ж усього записів у журналі? Рахувати вручну довго, хай рахує `COUNT(*)`." }],
+          task: "Порахуй, скільки всього записів у журналі перепусток `access_log`.",
           solution: "SELECT COUNT(*) FROM access_log",
           ordered: false,
           mustUse: ["COUNT"],
-          hints: ["SELECT COUNT(*) FROM …"],
+          hints: ["`SELECT COUNT(*) FROM …`"],
           starter: "",
           clue: "У журналі перепусток 65 записів за три дні."
         },
@@ -447,16 +545,16 @@ export const lostCup: Case = {
           story: [
             {
               speaker: "robot",
-              text: "GROUP BY person_id збирає рядки однієї людини в групу, а COUNT(*) рахує рядки в кожній групі. Так можна дізнатися, хто скільки разів заходив."
+              text: "Хто ходить у лабораторію найчастіше? `GROUP BY person_id` збере записи кожної людини в групу, а `COUNT(*)` порахує рядки в кожній групі."
             }
           ],
-          task: "Для кожної людини покажи person_id і кількість її входів ('вхід') у лабораторію 214 за всі дні. Два стовпці: person_id і кількість.",
+          task: "Для кожної людини покажи `person_id` і кількість її входів (`'вхід'`) у лабораторію 214 за всі дні. Два стовпці: `person_id` і кількість.",
           solution: "SELECT person_id, COUNT(*) FROM access_log WHERE room_id = 214 AND action = 'вхід' GROUP BY person_id",
           ordered: false,
           mustUse: ["COUNT", "GROUP BY"],
           hints: [
-            "Спочатку WHERE для кімнати й дії, потім GROUP BY person_id.",
-            "SELECT person_id, COUNT(*) FROM access_log WHERE … GROUP BY person_id"
+            "Спочатку `WHERE` для кімнати й дії, потім `GROUP BY person_id`.",
+            "`SELECT person_id, COUNT(*) FROM access_log WHERE … GROUP BY person_id`"
           ],
           starter: "",
           clue: "Найчастіше в лабораторію ходять члени гуртка: Марко (5) і Марія (6). Вони точно знали, де стоїть кубок."
@@ -469,24 +567,43 @@ export const lostCup: Case = {
       topics: "JOIN",
       steps: [
         {
+          kind: "lesson",
+          id: "lesson-join",
+          title: "Урок: JOIN",
+          story: [{ speaker: "robot", text: "Останній урок, і він найсильніший: навчимося з'єднувати таблиці." }],
+          explain: [
+            "Дані часто лежать у різних таблицях. У журналі `access_log` є лише номер людини (`person_id`), а ім'я цієї людини записано в таблиці `people` (стовпець `id`).",
+            "`JOIN` («з'єднай») ставить поруч рядки двох таблиць. Після `ON` пишуть умову з'єднання: `ON people.id = access_log.person_id` означає «той самий номер людини».",
+            "Щоб не писати довгі назви, таблицям дають короткі імена, псевдоніми: `FROM access_log a JOIN people p`. Тоді стовпці пишуть з ім'ям таблиці: `a.time`, `p.first_name`."
+          ],
+          syntax: "SELECT … FROM таблиця1 t1 JOIN таблиця2 t2 ON t2.id = t1.номер",
+          notes: [
+            { code: "JOIN", text: "з'єднує дві таблиці" },
+            { code: "ON", text: "умова: які рядки ставити поруч" },
+            { code: "a", text: "псевдонім, коротке ім'я таблиці" },
+            { code: "a.time", text: "стовпець time з таблиці a" }
+          ],
+          example: "SELECT a.day, a.time, a.action, p.first_name, p.last_name FROM access_log a JOIN people p ON p.id = a.person_id LIMIT 5"
+        },
+        {
           kind: "query",
           id: "names-after-five",
           title: "Імена замість номерів",
           story: [
             {
               speaker: "robot",
-              text: "У журналі лише номери людей, а імена в іншій таблиці. JOIN з'єднує таблиці: access_log JOIN people ON people.id = access_log.person_id ставить поруч запис журналу та людину з тим самим номером."
+              text: "У журналі лише номери людей, а імена в таблиці `people`. З'єднай дві таблиці через `JOIN`, і замість номерів побачиш імена."
             },
-            { speaker: "robot", text: "Щоб писати коротше, таблицям дають псевдоніми: FROM access_log a JOIN people p ON p.id = a.person_id." }
+            { speaker: "robot", text: "Нагадаю псевдоніми: `FROM access_log a JOIN people p ON p.id = a.person_id`." }
           ],
-          task: "Покажи ім'я, прізвище та час (first_name, last_name, time) усіх, хто заходив у лабораторію 214 15 жовтня о 17:00 або пізніше.",
+          task: "Покажи ім'я, прізвище та час (`first_name`, `last_name`, `time`) усіх, хто заходив у лабораторію 214 15 жовтня о 17:00 або пізніше.",
           solution:
             "SELECT p.first_name, p.last_name, a.time FROM access_log a JOIN people p ON p.id = a.person_id WHERE a.room_id = 214 AND a.day = '2026-10-15' AND a.action = 'вхід' AND a.time >= '17:00'",
           ordered: false,
           mustUse: ["JOIN"],
           hints: [
-            "Умова WHERE така сама, як у розділі «Вечір четверга», лише перед стовпцями пиши a.",
-            "SELECT p.first_name, p.last_name, a.time FROM access_log a JOIN people p ON p.id = a.person_id WHERE …"
+            "Умова `WHERE` така сама, як у розділі «Вечір четверга», лише перед стовпцями пиши `a.`",
+            "`SELECT p.first_name, p.last_name, a.time FROM access_log a JOIN people p ON p.id = a.person_id WHERE …`"
           ],
           starter: "",
           clue: "Між 17:00 і 19:00 у лабораторії були Ігор Савчук (17:10–17:20), Марко Ковальчук (17:45–18:10) і Марія Шевчук (18:20–18:42). Ім'я на «Ма» мають двоє з них."
@@ -496,16 +613,16 @@ export const lostCup: Case = {
           id: "canteen-alibi",
           title: "Алібі в буфеті",
           story: [
-            { speaker: "robot", text: "Марко каже, що о 18:42 був у буфеті на першому поверсі. Перевірмо! BETWEEN '18:30' AND '18:50' означає «від 18:30 до 18:50 включно»." }
+            { speaker: "robot", text: "Марко каже, що о 18:42 був у буфеті на першому поверсі. Перевірмо! `BETWEEN '18:30' AND '18:50'` означає «від 18:30 до 18:50 включно»." }
           ],
-          task: "Покажи ім'я, прізвище, час і покупку (first_name, last_name, time, item) усіх покупок у буфеті 15 жовтня з 18:30 до 18:50.",
+          task: "Покажи ім'я, прізвище, час і покупку (`first_name`, `last_name`, `time`, `item`) усіх покупок у буфеті 15 жовтня з 18:30 до 18:50.",
           solution:
             "SELECT p.first_name, p.last_name, c.time, c.item FROM canteen c JOIN people p ON p.id = c.person_id WHERE c.day = '2026-10-15' AND c.time BETWEEN '18:30' AND '18:50'",
           ordered: false,
           mustUse: ["JOIN"],
           hints: [
-            "З'єднай canteen і people так само, як access_log і people.",
-            "… WHERE c.day = '2026-10-15' AND c.time BETWEEN '18:30' AND '18:50'"
+            "З'єднай `canteen` і `people` так само, як `access_log` і `people`.",
+            "`… WHERE c.day = '2026-10-15' AND c.time BETWEEN '18:30' AND '18:50'`"
           ],
           starter: "",
           clue: "О 18:41 Марко купив у буфеті булочку з маком. За хвилину він не встиг би опинитися з пакетом біля лабораторії на другому поверсі."
@@ -532,6 +649,6 @@ export const lostCup: Case = {
   ],
   ending: [
     { speaker: "narrator", text: "Наступного ранку Марія принесла кубок у лабораторію. Шестерня на ньому розхиталася, і вона забрала його додому, щоб разом з татом полагодити до олімпіади. Попередити забула." },
-    { speaker: "robot", text: "Справу розкрито! У ній знадобилися SELECT, WHERE, ORDER BY, LIKE, COUNT, GROUP BY і JOIN, справжні інструменти аналітика даних. До зустрічі в наступній справі, детективе!" }
+    { speaker: "robot", text: "Справу розкрито! У ній знадобилися `SELECT`, `WHERE`, `ORDER BY`, `LIKE`, `COUNT`, `GROUP BY` і `JOIN`, справжні інструменти аналітика даних. До зустрічі в наступній справі, детективе!" }
   ]
 }

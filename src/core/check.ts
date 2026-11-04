@@ -1,5 +1,5 @@
 import type { Sandbox } from "./run.ts"
-import type { AnswerStep, Case, Cell, Progress, QueryStep, Report, ResultTable, Step, StepCheck, Verdict } from "./types.ts"
+import type { AnswerStep, Case, Cell, Progress, QueryStep, Report, ResultTable, Step, StepCheck, TaskStep, Verdict } from "./types.ts"
 
 const DECIMALS = 6
 
@@ -87,19 +87,19 @@ export const verdictMessage = (v: Verdict): string => {
     case "error":
       return v.message
     case "noTable":
-      return "Запит нічого не показав. Почни з SELECT."
+      return "Запит нічого не показав. Почни з `SELECT`."
     case "columns":
-      return `У результаті ${v.got} ${plural(v.got, "стовпець", "стовпці", "стовпців")}, а потрібно ${v.want}. Перевір, що написано після SELECT.`
+      return `У результаті ${v.got} ${plural(v.got, "стовпець", "стовпці", "стовпців")}, а потрібно ${v.want}. Перевір, що написано після \`SELECT\`.`
     case "tooMany":
-      return `Рядків забагато: ${v.got}, а потрібно ${v.want}. Додай або уточни умову WHERE.`
+      return `Рядків забагато: ${v.got}, а потрібно ${v.want}. Додай або уточни умову \`WHERE\`.`
     case "tooFew":
       return `Рядків замало: ${v.got}, а потрібно ${v.want}. Можливо, умова надто сувора.`
     case "order":
-      return "Рядки правильні, але порядок інший. Перевір ORDER BY: за зростанням (ASC) чи за спаданням (DESC)?"
+      return "Рядки правильні, але порядок інший. Перевір `ORDER BY`: за зростанням (`ASC`) чи за спаданням (`DESC`)?"
     case "values":
       return "Кількість рядків правильна, але значення не ті. Перевір умову й вибрані стовпці."
     case "mustUse":
-      return `Результат правильний, але в цьому завданні треба використати ${v.words.join(", ")}.`
+      return `Результат правильний, але в цьому завданні треба використати ${v.words.map((w) => `\`${w}\``).join(", ")}.`
     case "wrongAnswer":
       return "Ні, це не так. Перевір ще раз результати своїх запитів."
   }
@@ -117,10 +117,25 @@ export const plural = (n: number, one: string, few: string, many: string): strin
 
 export const allSteps = (c: Case): Step[] => c.chapters.flatMap((ch) => ch.steps)
 
+/** Steps that the student must solve, without lessons. */
+export const taskSteps = (c: Case): TaskStep[] => allSteps(c).filter((s): s is TaskStep => s.kind !== "lesson")
+
 export const emptyProgress = (c: Case): Progress => ({ caseId: c.id, solved: [], answers: {}, drafts: {}, hintsUsed: {} })
 
-/** The first step that is not solved yet, or undefined when the case is finished. */
-export const currentStep = (c: Case, p: Progress): Step | undefined => allSteps(c).find((s) => !p.solved.includes(s.id))
+/**
+ * True when the step is behind the student. A lesson also counts as done when a later step is solved,
+ * so that progress saved before the lesson was added does not send the student back.
+ */
+export const isStepDone = (c: Case, p: Progress, stepId: string): boolean => {
+  if (p.solved.includes(stepId)) return true
+  const steps = allSteps(c)
+  const i = steps.findIndex((s) => s.id === stepId)
+  const step = steps[i]
+  return step !== undefined && step.kind === "lesson" && steps.slice(i + 1).some((s) => p.solved.includes(s.id))
+}
+
+/** The first step that is not done yet, or undefined when the case is finished. */
+export const currentStep = (c: Case, p: Progress): Step | undefined => allSteps(c).find((s) => !isStepDone(c, p, s.id))
 
 /** Marks a step solved and keeps the accepted query or answer. A solved step keeps its first answer. */
 export const markSolved = (p: Progress, stepId: string, answer: string): Progress =>
@@ -130,9 +145,9 @@ export const markSolved = (p: Progress, stepId: string, answer: string): Progres
 const HINT_COST = 0.25
 const MIN_STEP_POINTS = 0.5
 
-/** Score from 0 to 1 for the solved steps: 1 per step, minus 0.25 per hint, but at least 0.5 per step. */
+/** Score from 0 to 1 for the solved task steps: 1 per step, minus 0.25 per hint, but at least 0.5 per step. */
 export const caseScore = (c: Case, solved: readonly string[], hintsUsed: Readonly<Record<string, number>>): number => {
-  const steps = allSteps(c)
+  const steps = taskSteps(c)
   const points = steps
     .filter((s) => solved.includes(s.id))
     .reduce((sum, s) => sum + Math.max(MIN_STEP_POINTS, 1 - HINT_COST * Math.max(0, hintsUsed[s.id] ?? 0)), 0)
@@ -140,11 +155,11 @@ export const caseScore = (c: Case, solved: readonly string[], hintsUsed: Readonl
 }
 
 /**
- * Checks every step of a case again with the saved answers, for example on a server before it
- * issues a certificate. A step without an answer does not pass.
+ * Checks every task step of a case again with the saved answers, for example on a server before it
+ * issues a certificate. A step without an answer does not pass. Lessons are not checked.
  */
 export const checkCase = (sandbox: Sandbox, c: Case, answers: Readonly<Record<string, string>>): StepCheck[] =>
-  allSteps(c).map((step) => {
+  taskSteps(c).map((step) => {
     const answer = Object.hasOwn(answers, step.id) ? answers[step.id] : undefined
     if (answer === undefined) return { stepId: step.id, passed: false }
     const verdict = step.kind === "query" ? checkQuery(sandbox, step, answer) : checkAnswer(step, answer)
@@ -152,7 +167,7 @@ export const checkCase = (sandbox: Sandbox, c: Case, answers: Readonly<Record<st
   })
 
 export const makeReport = (c: Case, p: Progress, stepId: string): Report => {
-  const steps = allSteps(c)
+  const steps = taskSteps(c)
   const solved = steps.filter((s) => p.solved.includes(s.id))
   return {
     caseId: c.id,
