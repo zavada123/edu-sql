@@ -1,7 +1,8 @@
 import type { Case } from "../types.ts"
+import { fakeVotes } from "./fake-votes.ts"
 import { lostCup } from "./lost-cup.ts"
 
-export { lostCup }
+export { fakeVotes, lostCup }
 
 /** All cases, in the order a student plays them. */
-export const cases: readonly Case[] = [lostCup]
+export const cases: readonly Case[] = [lostCup, fakeVotes]

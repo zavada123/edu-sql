@@ -4,10 +4,11 @@ import { cases, type Progress, type Report } from "../core/index.ts"
 import { SqlDetective } from "../ui/SqlDetective.tsx"
 import "./demo.css"
 
-const firstCase = cases[0]
+const params = new URLSearchParams(window.location.search)
+/** ?case=fake-votes opens another case; the first case is the default. */
+const firstCase = cases.find((c) => c.id === params.get("case")) ?? cases[0]
 if (!firstCase) throw new Error("Немає жодної справи")
 
-const params = new URLSearchParams(window.location.search)
 /** ?embed=1 hides the demo header and sends reports to the parent page (iframe). */
 const embedded = params.get("embed") === "1"
 const STORAGE = `edu-sql:${firstCase.id}`

@@ -120,6 +120,8 @@ export interface Case {
   readonly summary: string
   /** Grades the case is made for, e.g. "7–11". */
   readonly grades: string
+  /** SQL words for the buttons under the editor, for one tap on a phone. */
+  readonly chips: readonly string[]
   /** SQL that creates and fills the database. */
   readonly setup: string
   readonly tables: readonly TableInfo[]

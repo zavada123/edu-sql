@@ -284,6 +284,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
               onChange={setQuery}
               onRun={run}
               inserterRef={inserter}
+              chips={c.chips}
               title={`ліцей.db — ${step.title}`}
               toolbar={
                 <>

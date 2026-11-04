@@ -1068,6 +1068,10 @@
   --hue: #fb7185;
 }
 
+.edu-sql-hue-5 {
+  --hue: #f0abfc;
+}
+
 .edu-sql-schema-table header {
   padding: 10px 12px 8px;
   border-bottom: 1px solid var(--sql-border);

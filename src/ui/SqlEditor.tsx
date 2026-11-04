@@ -11,13 +11,12 @@ interface Props {
   readonly title: string
   /** Buttons under the editor: Run and others. */
   readonly toolbar: ReactNode
+  /** Words for one tap on a phone, where typing SQL is slow. */
+  readonly chips: readonly string[]
 }
 
-/** Words for one tap on a phone, where typing SQL is slow. */
-const CHIPS = ["SELECT", "*", "FROM", "WHERE", "AND", "=", ">=", "''", "ORDER BY", "DESC", "LIMIT", "LIKE", "'%%'", "COUNT(*)", "GROUP BY", "JOIN", "ON"]
-
 /** A textarea over a colored copy of the same text: simple SQL coloring without a code editor library. */
-export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar }: Props) => {
+export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar, chips }: Props) => {
   const area = useRef<HTMLTextAreaElement>(null)
   const back = useRef<HTMLPreElement>(null)
 
@@ -93,7 +92,7 @@ export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar 
       </div>
       <div className="edu-sql-term-tools">{toolbar}</div>
       <div className="edu-sql-chips" aria-label="Вставити слово SQL">
-        {CHIPS.map((c) => (
+        {chips.map((c) => (
           <button key={c} type="button" className="edu-sql-chip" onClick={() => insert(c)}>
             {c === "''" ? "' '" : c === "'%%'" ? "'% %'" : c}
           </button>

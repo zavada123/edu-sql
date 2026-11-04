@@ -10,8 +10,8 @@ type KeyKind = "primary" | "foreign" | "none"
 /** The column is a key when its note says so: "(ключ)" or a link like "(people.id)". */
 const keyKind = (c: ColumnInfo): KeyKind => (/\(ключ\)/.test(c.note) ? "primary" : /\(\w+\.id\)/.test(c.note) ? "foreign" : "none")
 
-/** Number of table colors in sql.css (.edu-sql-hue-0 … -4). */
-const HUES = 5
+/** Number of table colors in sql.css (.edu-sql-hue-0 … -5). */
+const HUES = 6
 
 const KEY_MARK: Record<KeyKind, string> = { primary: "🔑", foreign: "🔗", none: "" }
 const KEY_LABEL: Record<KeyKind, string> = { primary: "ключ", foreign: "зв'язок з іншою таблицею", none: "" }

@@ -33,7 +33,9 @@ The student-facing interface is in Ukrainian. It was built for [EduProstir](http
 - **Phone friendly:** one-tap SQL word buttons, and a tap on a table or column name in the schema inserts it into the query.
 - **Protection from runaway queries:** a query that returns more than 5000 rows (for example, a join without `ON`) stops with a message.
 
-Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `BETWEEN` and `JOIN` in 14 steps (grades 7–11).
+Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `BETWEEN` and `JOIN` in 14 tasks and 6 lessons (grades 7–11).
+
+Case 2, «Справа про фальшиве голосування», is for grades 9–11. It covers `DISTINCT`, `MIN`/`MAX`, `substr`, `HAVING`, `LEFT JOIN`, `IS NULL`, `JOIN` of three tables and subqueries in 17 tasks and 7 lessons. Its database of about 1 300 rows comes from `scripts/fake-votes-db.py`, a seeded generator that also prints the facts of the story.
 
 ## Installation
 
@@ -94,7 +96,7 @@ checkCase(sandbox, lostCup, progress.answers) // [{ stepId: "rooms", passed: tru
 
 ## Writing a case
 
-A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.
+A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, the SQL words for the buttons under the editor (`chips`), chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.
 
 ## Development
 
