@@ -123,6 +123,13 @@ const createWorker = () => new Worker(new URL("./sql-worker.ts", import.meta.url
 
 `onNewDatabase` comes when the student opens another database (a template, a file, a share link) instead of the saved one, before its first `onChange`: a host that keeps several databases starts a new record then. `onChange` comes after every change of the data, the query text or the name; `snapshot.image` is a new `Uint8Array` only when the data changed, so the host can save the file only then. Without `createWorker` the database runs on the page without a time limit. `edu-sql/sandbox` has the core without React (`LiveDatabase`, `DatabaseHost`, CSV helpers, templates) for tests.
 
+### Practice tasks
+
+The «Завдання» tab of the sandbox has query tasks on a template database (`practiceSets` in the core). The first set
+follows grade 9, chapter 6 «Бази даних» (§6.1–6.2): fields, the key, sorting by one and several fields, filters with
+`WHERE`, `AND` and `LIKE`. A check runs the query on a fresh copy of the template (`checkQuery`), so changes in the
+live database do not break it. Marks of solved tasks stay in the browser (`localStorage`).
+
 ## Writing a case
 
 A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, the SQL words for the buttons under the editor (`chips`), chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.

@@ -700,8 +700,13 @@
   .edu-sql-sb.is-m-query .edu-sql-sb-out,
   .edu-sql-sb.is-m-result .edu-sql-sb-side,
   .edu-sql-sb.is-m-result .edu-sql-sb-editor,
-  .edu-sql-sb.is-m-schema .edu-sql-sb-main {
+  .edu-sql-sb.is-m-schema .edu-sql-sb-main,
+  .edu-sql-sb.is-m-practice .edu-sql-sb-main {
     display: none;
+  }
+  .edu-sql-sb-mtabs button {
+    padding-left: 4px;
+    padding-right: 4px;
   }
   .edu-sql-sb-term .edu-sql-editor {
     height: 200px;
@@ -713,4 +718,78 @@
     right: auto;
     left: 0;
   }
+}
+
+/* Practice tasks («Завдання» tab) */
+.edu-sql-sb-practice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.edu-sql-sb-practice p {
+  margin: 0;
+}
+.edu-sql-sb-practice-source,
+.edu-sql-sb-practice-count {
+  color: var(--sql-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.edu-sql-sb-practice-db {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--sql-amber);
+  border-radius: 10px;
+}
+.edu-sql-sb-practice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.edu-sql-sb-practice-list button {
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sql-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.edu-sql-sb-practice-list button:hover,
+.edu-sql-sb-practice-list button.is-on {
+  background: var(--sql-panel-2);
+}
+.edu-sql-sb-practice-list button.is-on {
+  font-weight: 800;
+}
+.edu-sql-sb-practice-task {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sql-border);
+}
+.edu-sql-sb-practice-task > * {
+  max-width: 100%;
+}
+/* The task and hint cards are light, as in the case dossier: dark ink on them. */
+.edu-sql-sb-practice .edu-sql-task,
+.edu-sql-sb-practice .edu-sql-hint,
+.edu-sql-sb-practice .edu-sql-clue {
+  color: var(--sql-ink);
+}
+.edu-sql-sb-practice .edu-sql-task,
+.edu-sql-sb-practice .edu-sql-hints {
+  align-self: stretch;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react"
+import { practiceFor, practiceSets } from "../../core/index.ts"
 import {
   decodeText,
   encodeShare,
@@ -28,6 +29,7 @@ import { useFullScreen } from "../useFullScreen.ts"
 import { CsvWizard } from "./CsvWizard.tsx"
 import { downloadFile, fileBase } from "./download.ts"
 import { SandboxResults, type RunView } from "./SandboxResults.tsx"
+import { SandboxPractice } from "./SandboxPractice.tsx"
 import { SandboxHistory, SandboxSchema } from "./SandboxSchema.tsx"
 import type { SandboxSnapshot } from "./snapshot.ts"
 import "../sql.css"
@@ -87,8 +89,8 @@ const CHIPS = [
 /** Session history keeps this many queries. */
 const MAX_HISTORY = 30
 
-type Side = "schema" | "history"
-type MobileTab = "query" | "result" | "schema"
+type Side = "schema" | "history" | "practice"
+type MobileTab = "query" | "result" | "schema" | "practice"
 type Csv = { readonly fileName: string; readonly bytes: Uint8Array }
 
 const extension = (name: string): string => name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? ""
@@ -111,7 +113,10 @@ const failureText = (res: SandboxResponse): string =>
       ? `Запит виконувався довше за ${res.seconds} с, тому його зупинено. Можливо, \`WITH RECURSIVE\` не має умови зупинки або таблиці з'єднано без \`ON\`. База повернулася до стану після останньої зміни.`
       : ""
 
-/** A free SQL window: the student creates or opens a database and runs any queries. No tasks, no scores. */
+/**
+ * A free SQL window: the student creates or opens a database and runs any queries. The «Завдання» tab has practice
+ * tasks with a check (`practiceSets`), without scores.
+ */
 export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatabase, saveStatus, toolbarExtra }: SqlSandboxProps) => {
   const [client, setClient] = useState<SandboxClient>()
   const [hasDb, setHasDb] = useState(false)
@@ -265,6 +270,9 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
     }
     void runSql(sel.text, sel.line, true)
   }
+
+  /** Tasks for the open template, else the first set. */
+  const practice = practiceFor(template) ?? practiceSets[0] ?? null
 
   const preview = (table: string) => void runSql(`SELECT * FROM ${sqlName(table)} LIMIT 100;`, 1, true)
 
@@ -484,10 +492,21 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
               [
                 ["query", "Запит"],
                 ["result", "Результат"],
-                ["schema", "Таблиці"]
+                ["schema", "Таблиці"],
+                ["practice", "Завдання"]
               ] as const
             ).map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={mobile === id} className={mobile === id ? "is-on" : ""} onClick={() => setMobile(id)}>
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={mobile === id}
+                className={mobile === id ? "is-on" : ""}
+                onClick={() => {
+                  setMobile(id)
+                  if (id === "schema" || id === "practice") setSide(id)
+                }}
+              >
                 {label}
                 {id === "schema" && <span className="edu-sql-badge">{schema.length}</span>}
               </button>
@@ -502,10 +521,26 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
                 <button type="button" role="tab" aria-selected={side === "history"} className={side === "history" ? "is-on" : ""} onClick={() => setSide("history")}>
                   Історія
                 </button>
+                <button type="button" role="tab" aria-selected={side === "practice"} className={side === "practice" ? "is-on" : ""} onClick={() => setSide("practice")}>
+                  Завдання
+                </button>
               </div>
               <div className="edu-sql-panel-body">
                 {side === "schema" ? (
                   <SandboxSchema tables={schema} onInsert={(t) => inserter.current?.(t)} onPreview={preview} disabled={busy} />
+                ) : side === "practice" && practice !== null ? (
+                  <SandboxPractice
+                    set={practice}
+                    template={template}
+                    onOpenDatabase={() => {
+                      const t = templateById(practice.database)
+                      if (t) void openTemplate(t, queries)
+                    }}
+                    query={() => {
+                      const sel = selection.current?.().text ?? ""
+                      return sel.trim() === "" ? queries : sel
+                    }}
+                  />
                 ) : (
                   <SandboxHistory
                     items={history}
