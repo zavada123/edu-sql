@@ -48,6 +48,9 @@ const Demo = () => {
       <header className="demo-head">
         <strong>SQL-детектив</strong>
         <span>тренажер баз даних для школярів</span>
+        <a href="./sandbox.html" style={{ color: "#fbbf24" }}>
+          SQL-пісочниця →
+        </a>
       </header>
       <main className="demo-main">
         {trainer}

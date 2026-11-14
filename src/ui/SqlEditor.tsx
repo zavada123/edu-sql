@@ -13,10 +13,22 @@ interface Props {
   readonly toolbar: ReactNode
   /** Words for one tap on a phone, where typing SQL is slow. */
   readonly chips: readonly string[]
+  /** Gets a function that reads the selected text, for "run the selection". */
+  readonly selectionRef?: { current: (() => EditorSelection) | null } | undefined
+  /** Ctrl + Shift + Enter: run only the selected text. */
+  readonly onRunSelection?: (() => void) | undefined
+  /** An extra class of the window, for example a taller editor. */
+  readonly className?: string | undefined
+}
+
+/** The selected text of the editor and the line where it starts (1-based). Empty text when nothing is selected. */
+export interface EditorSelection {
+  readonly text: string
+  readonly line: number
 }
 
 /** A textarea over a colored copy of the same text: simple SQL coloring without a code editor library. */
-export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar, chips }: Props) => {
+export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar, chips, selectionRef, onRunSelection, className }: Props) => {
   const area = useRef<HTMLTextAreaElement>(null)
   const back = useRef<HTMLPreElement>(null)
 
@@ -38,11 +50,18 @@ export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar,
     })
   }
   inserterRef.current = insert
+  if (selectionRef)
+    selectionRef.current = () => {
+      const el = area.current
+      if (!el || el.selectionStart === el.selectionEnd) return { text: "", line: 1 }
+      return { text: value.slice(el.selectionStart, el.selectionEnd), line: value.slice(0, el.selectionStart).split("\n").length }
+    }
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      onRun()
+      if (e.shiftKey && onRunSelection) onRunSelection()
+      else onRun()
     }
   }
 
@@ -54,7 +73,7 @@ export const SqlEditor = ({ value, onChange, onRun, inserterRef, title, toolbar,
   }
 
   return (
-    <div className="edu-sql-term">
+    <div className={className ? `edu-sql-term ${className}` : "edu-sql-term"}>
       <div className="edu-sql-term-bar">
         <span className="edu-sql-term-dots" aria-hidden="true">
           <i />
