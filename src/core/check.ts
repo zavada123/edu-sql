@@ -51,8 +51,11 @@ export const missingWords = (sql: string, words: readonly string[]): string[] =>
   return words.filter((w) => !new RegExp(`\\b${w.toUpperCase().replace(/\s+/g, "\\s+")}\\b`).test(code))
 }
 
+/** What a query check needs: a query step of a case, or a practice task of the sandbox. */
+export type QueryCheck = Pick<QueryStep, "solution" | "ordered" | "mustUse">
+
 /** Runs the student's query and the reference query and compares the results. */
-export const checkQuery = (sandbox: Sandbox, step: QueryStep, sql: string): Verdict => {
+export const checkQuery = (sandbox: Sandbox, step: QueryCheck, sql: string): Verdict => {
   const got = sandbox.run(sql)
   if (got.kind === "error") return { kind: "error", message: got.message }
   if (got.kind === "empty") return { kind: "noTable" }
