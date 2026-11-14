@@ -121,7 +121,7 @@ const createWorker = () => new Worker(new URL("./sql-worker.ts", import.meta.url
 />
 ```
 
-`onChange` comes after every change of the data, the query text or the name; `snapshot.image` is a new `Uint8Array` only when the data changed, so the host can save the file only then. Without `createWorker` the database runs on the page without a time limit. `edu-sql/sandbox` has the core without React (`LiveDatabase`, `DatabaseHost`, CSV helpers, templates) for tests.
+`onNewDatabase` comes when the student opens another database (a template, a file, a share link) instead of the saved one, before its first `onChange`: a host that keeps several databases starts a new record then. `onChange` comes after every change of the data, the query text or the name; `snapshot.image` is a new `Uint8Array` only when the data changed, so the host can save the file only then. Without `createWorker` the database runs on the page without a time limit. `edu-sql/sandbox` has the core without React (`LiveDatabase`, `DatabaseHost`, CSV helpers, templates) for tests.
 
 ## Writing a case
 

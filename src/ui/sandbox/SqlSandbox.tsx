@@ -45,6 +45,11 @@ export interface SqlSandboxProps {
   readonly shared?: SharedQueries | undefined
   /** After every change of the data, the editor text or the name. The host saves it (with a pause). */
   readonly onChange?: ((snapshot: SandboxSnapshot) => void) | undefined
+  /**
+   * The student opened another database (a template, a file, a share link), not the saved one from `initial`.
+   * Comes before the `onChange` of the new database, so a host with several saved databases starts a new record.
+   */
+  readonly onNewDatabase?: (() => void) | undefined
   /** Save status of the host, for example «Збережено в кабінеті». */
   readonly saveStatus?: ReactNode
   /** Extra buttons of the host in the toolbar, for example «Мої бази». */
@@ -107,7 +112,7 @@ const failureText = (res: SandboxResponse): string =>
       : ""
 
 /** A free SQL window: the student creates or opens a database and runs any queries. No tasks, no scores. */
-export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus, toolbarExtra }: SqlSandboxProps) => {
+export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatabase, saveStatus, toolbarExtra }: SqlSandboxProps) => {
   const [client, setClient] = useState<SandboxClient>()
   const [hasDb, setHasDb] = useState(false)
   const [starting, setStarting] = useState(true)
@@ -159,9 +164,17 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
     window.setTimeout(() => setNotice((n) => (n === text ? "" : n)), 2500)
   }
 
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const onNewRef = useRef(onNewDatabase)
+  onNewRef.current = onNewDatabase
+
   /** Opens a new database. Returns false when the source could not be opened (the old database stays). */
   const openDatabase = useCallback(
-    async (source: DatabaseSource, next: { readonly name: string; readonly template: string; readonly queries: string | null }): Promise<boolean> => {
+    async (
+      source: DatabaseSource,
+      next: { readonly name: string; readonly template: string; readonly queries: string | null; readonly saved: boolean }
+    ): Promise<boolean> => {
       if (!client) return false
       setBusy(true)
       const res = await client.request({ kind: "open", source })
@@ -170,6 +183,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
         setView({ kind: "note", tone: "error", text: failureText(res) })
         return false
       }
+      if (!next.saved) onNewRef.current?.()
       setUndo(new UndoStack())
       imageRef.current = null
       applyState(res.state, false)
@@ -187,7 +201,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
   )
 
   const openTemplate = (t: Template, queriesText: string | null = null) =>
-    openDatabase(t.setup === "" ? { kind: "empty" } : { kind: "script", sql: t.setup }, { name: t.title, template: t.id, queries: queriesText ?? t.starter })
+    openDatabase(t.setup === "" ? { kind: "empty" } : { kind: "script", sql: t.setup }, { name: t.title, template: t.id, queries: queriesText ?? t.starter, saved: false })
 
   // First open: a share link, then the saved database, else the start screen.
   useEffect(() => {
@@ -196,9 +210,9 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
     const first = async () => {
       if (shared) {
         const t = templateById(shared.template) ?? templates[0]
-        if (t) await openDatabase(t.setup === "" ? { kind: "empty" } : { kind: "script", sql: t.setup }, { name: t.title, template: t.id, queries: shared.queries })
+        if (t) await openDatabase(t.setup === "" ? { kind: "empty" } : { kind: "script", sql: t.setup }, { name: t.title, template: t.id, queries: shared.queries, saved: false })
       } else if (initial?.image) {
-        const ok = await openDatabase({ kind: "image", bytes: initial.image }, { name: initial.name, template: initial.template, queries: initial.queries })
+        const ok = await openDatabase({ kind: "image", bytes: initial.image }, { name: initial.name, template: initial.template, queries: initial.queries, saved: true })
         if (!ok) setChoosing(true)
       } else setChoosing(true)
       if (alive) setStarting(false)
@@ -211,8 +225,6 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
   }, [client])
 
   // The host saves every change.
-  const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
   useEffect(() => {
     if (hasDb) onChangeRef.current?.({ name, template, queries, image })
   }, [hasDb, name, template, queries, image])
@@ -284,7 +296,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
     const bytes = new Uint8Array(await file.arrayBuffer())
     const base = file.name.replace(/\.[^.]*$/, "") || "база"
     if (isSqliteFile(bytes)) {
-      await openDatabase({ kind: "image", bytes }, { name: base, template: "", queries: null })
+      await openDatabase({ kind: "image", bytes }, { name: base, template: "", queries: null, saved: false })
       return
     }
     if (ext === "csv" || ext === "tsv" || ext === "txt") {
@@ -292,7 +304,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
       return
     }
     if (ext === "sql") {
-      const ok = await openDatabase({ kind: "script", sql: decodeText(bytes, "auto").text }, { name: base, template: "", queries: null })
+      const ok = await openDatabase({ kind: "script", sql: decodeText(bytes, "auto").text }, { name: base, template: "", queries: null, saved: false })
       if (ok) flash(`Базу «${base}» створено зі скрипту`)
       return
     }
@@ -320,7 +332,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, saveStatus
   const importCsv = async (sql: string, table: string) => {
     setCsv(null)
     if (!hasDb) {
-      const ok = await openDatabase({ kind: "empty" }, { name: table, template: "", queries: "" })
+      const ok = await openDatabase({ kind: "empty" }, { name: table, template: "", queries: "", saved: false })
       if (!ok) return
     }
     const results = await runSql(sql, 1, false)
