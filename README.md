@@ -94,6 +94,35 @@ checkCase(sandbox, lostCup, progress.answers) // [{ stepId: "rooms", passed: tru
 
 `progress.answers` keeps the accepted query or answer of each solved step. `endExtra` puts your own content (for example a certificate form) on the final screen.
 
+## SQL sandbox
+
+`SqlSandbox` is a free SQL window next to the detective game: no tasks and no scores. The student creates a database (empty or from a template: «Бібліотека», «Магазин», «Школа: класи й оцінки» and the databases of the cases) or opens a file, writes any queries and sees the result. Demo: [`sandbox.html`](https://zavada123.github.io/edu-sql/sandbox.html).
+
+- **A live database:** `CREATE`, `INSERT`, `UPDATE` and `DROP` change it. Foreign keys are on.
+- **Every statement gets a result:** a tab for each table and a log («Додано 3 рядки», «Таблицю створено»). The run stops at the first error; the error shows its line, a Ukrainian explanation and the original SQLite text.
+- **Run all** (Ctrl + Enter) or **run the selection** (Ctrl + Shift + Enter).
+- **Schema panel:** tables and views, column types, keys, row counts; a tap inserts a name, «Переглянути» shows the first 100 rows.
+- **Session history** and **undo** of the last 10 data changes (for databases up to 2 MB).
+- **Limits:** 5000 rows per result; in a Web Worker a query stops after 5 seconds and the database returns to its last state; files up to 5 MB.
+- **Import:** `.sqlite` / `.db` (header check), `.sql` scripts (for example `sqlite3 .dump`), `.csv` through a wizard (table name, separator `,` `;` tab, header row, UTF-8 or Windows-1251, column types guessed and editable). A CSV adds a table to the open database. Files can be dropped on the window.
+- **Export:** the database as `.sqlite` or as an `.sql` dump, a result as `.csv` for Excel (UTF-8 with BOM, `;`) or to the clipboard, the query text as `.sql`, and a share link `#sql=…` with the query text and the template.
+
+```tsx
+import { SqlSandbox, decodeShare, loadFromBrowser, saveToBrowser } from "edu-sql"
+
+const createWorker = () => new Worker(new URL("./sql-worker.ts", import.meta.url), { type: "module" })
+// sql-worker.ts contains one line: import "edu-sql/worker"
+
+<SqlSandbox
+  createWorker={createWorker}
+  initial={await loadFromBrowser("guest")}
+  shared={decodeShare(location.hash)}
+  onChange={(snapshot) => saveToBrowser("guest", snapshot)} // { name, template, queries, image }
+/>
+```
+
+`onChange` comes after every change of the data, the query text or the name; `snapshot.image` is a new `Uint8Array` only when the data changed, so the host can save the file only then. Without `createWorker` the database runs on the page without a time limit. `edu-sql/sandbox` has the core without React (`LiveDatabase`, `DatabaseHost`, CSV helpers, templates) for tests.
+
 ## Writing a case
 
 A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, the SQL words for the buttons under the editor (`chips`), chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.

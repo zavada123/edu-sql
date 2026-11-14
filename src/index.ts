@@ -1,3 +1,7 @@
 export * from "./core/index.ts"
 export { SqlDetective } from "./ui/SqlDetective.tsx"
 export { loadSql } from "./ui/loadSql.ts"
+export * from "./sandbox/index.ts"
+export { SqlSandbox, type SqlSandboxProps } from "./ui/sandbox/SqlSandbox.tsx"
+export type { SandboxSnapshot } from "./ui/sandbox/snapshot.ts"
+export { loadFromBrowser, saveToBrowser } from "./ui/sandbox/browserStore.ts"
