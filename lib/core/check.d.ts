@@ -7,8 +7,10 @@ import type { AnswerStep, Case, Progress, QueryStep, Report, ResultTable, Step, 
 export declare const compareTables: (got: ResultTable, want: ResultTable, ordered: boolean) => Verdict;
 /** SQL words from `words` that the query does not contain. */
 export declare const missingWords: (sql: string, words: readonly string[]) => string[];
+/** What a query check needs: a query step of a case, or a practice task of the sandbox. */
+export type QueryCheck = Pick<QueryStep, "solution" | "ordered" | "mustUse">;
 /** Runs the student's query and the reference query and compares the results. */
-export declare const checkQuery: (sandbox: Sandbox, step: QueryStep, sql: string) => Verdict;
+export declare const checkQuery: (sandbox: Sandbox, step: QueryCheck, sql: string) => Verdict;
 /** Lower case, single spaces, ґ = г, ё = е, apostrophes unified. */
 export declare const normalizeAnswer: (s: string) => string;
 export declare const checkAnswer: (step: AnswerStep, text: string) => Verdict;
