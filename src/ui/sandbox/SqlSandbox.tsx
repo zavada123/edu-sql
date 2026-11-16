@@ -23,6 +23,7 @@ import {
   type StatementResult,
   type Template
 } from "../../sandbox/index.ts"
+import { copyLink } from "../copy-link.ts"
 import { loadSql } from "../loadSql.ts"
 import { SqlEditor, type EditorSelection } from "../SqlEditor.tsx"
 import { useFullScreen } from "../useFullScreen.ts"
@@ -56,7 +57,14 @@ export interface SqlSandboxProps {
   readonly saveStatus?: ReactNode
   /** Extra buttons of the host in the toolbar, for example «Мої бази». */
   readonly toolbarExtra?: ReactNode
+  /**
+   * The link for a share hash (`#sql=…`): now or later (a short link from a server; the promise must not fail).
+   * By default this page with the hash.
+   */
+  readonly shareUrl?: ((hash: string) => string | Promise<string>) | undefined
 }
+
+const defaultShareUrl = (hash: string): string => `${window.location.href.replace(/#.*$/, "")}${hash}`
 
 /** SQL words for one tap on a phone. */
 const CHIPS = [
@@ -117,7 +125,7 @@ const failureText = (res: SandboxResponse): string =>
  * A free SQL window: the student creates or opens a database and runs any queries. The «Завдання» tab has practice
  * tasks with a check (`practiceSets`), without scores.
  */
-export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatabase, saveStatus, toolbarExtra }: SqlSandboxProps) => {
+export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatabase, saveStatus, toolbarExtra, shareUrl = defaultShareUrl }: SqlSandboxProps) => {
   const [client, setClient] = useState<SandboxClient>()
   const [hasDb, setHasDb] = useState(false)
   const [starting, setStarting] = useState(true)
@@ -358,12 +366,11 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
     else setView({ kind: "note", tone: "error", text: failureText(res) })
   }
   const saveQueries = () => downloadFile(`${fileBase(name)}-запити.sql`, queries, "application/sql;charset=utf-8")
-  const share = () => {
-    const url = `${window.location.href.replace(/#.*$/, "")}${encodeShare({ template, queries })}`
-    navigator.clipboard?.writeText(url).then(
-      () => flash("Посилання скопійовано. У ньому лише текст запитів і шаблон, а не твої дані."),
-      () => flash("Не вдалося скопіювати посилання")
-    )
+  const share = async () => {
+    const link = await copyLink(shareUrl(encodeShare({ template, queries })), navigator.clipboard)
+    // A link to copy by hand stays on the screen: a short notice goes away before the student copies it.
+    if (link.kind === "copied") flash("Посилання скопійовано. У ньому лише текст запитів і шаблон, а не твої дані.")
+    else setNotice(`Скопіюй посилання: ${link.url}`)
   }
 
   const tooBig = size > MAX_DATABASE_BYTES
@@ -424,7 +431,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
                   <button type="button" onClick={saveQueries}>
                     Текст запитів <b>.sql</b>
                   </button>
-                  <button type="button" onClick={share}>
+                  <button type="button" onClick={() => void share()}>
                     🔗 Посилання на запити
                   </button>
                 </div>
