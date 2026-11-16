@@ -14,6 +14,7 @@ import {
   type CsvDelimiter,
   type TextEncoding
 } from "../../sandbox/index.ts"
+import { Select } from "../Select.tsx"
 
 interface Props {
   readonly fileName: string
@@ -75,27 +76,27 @@ export const CsvWizard = ({ fileName, bytes, onImport, onCancel }: Props) => {
             Назва таблиці
             <input value={table} onChange={(e) => setTable(e.target.value)} spellCheck={false} />
           </label>
-          <label>
+          <div className="edu-sql-sb-field">
             Роздільник
-            <select value={delimiter} onChange={(e) => setDelimiter(Object.values(CsvDelimiters).find((d) => d === e.target.value) ?? CsvDelimiters.Comma)}>
-              {Object.values(CsvDelimiters).map((d) => (
-                <option key={d} value={d}>
-                  {DELIMITER_LABEL[d]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
+            <Select
+              ariaLabel="Роздільник"
+              value={delimiter}
+              options={Object.values(CsvDelimiters).map((d) => ({ value: d, label: DELIMITER_LABEL[d] }))}
+              onChange={setDelimiter}
+            />
+          </div>
+          <div className="edu-sql-sb-field">
             Кодування
-            <select value={encoding} onChange={(e) => setEncoding(e.target.value === "auto" ? "auto" : (Object.values(TextEncodings).find((x) => x === e.target.value) ?? "auto"))}>
-              {(["auto", TextEncodings.Utf8, TextEncodings.Windows1251] as const).map((x) => (
-                <option key={x} value={x}>
-                  {ENCODING_LABEL[x]}
-                  {x === "auto" ? ` (${decoded.encoding === TextEncodings.Utf8 ? "UTF-8" : "Windows-1251"})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select
+              ariaLabel="Кодування"
+              value={encoding}
+              options={(["auto", TextEncodings.Utf8, TextEncodings.Windows1251] as const).map((x) => ({
+                value: x,
+                label: ENCODING_LABEL[x] + (x === "auto" ? ` (${decoded.encoding === TextEncodings.Utf8 ? "UTF-8" : "Windows-1251"})` : "")
+              }))}
+              onChange={setEncoding}
+            />
+          </div>
           <label className="edu-sql-sb-check">
             <input type="checkbox" checked={hasHeader} onChange={(e) => setHasHeader(e.target.checked)} />
             Перший рядок містить назви стовпців
@@ -111,17 +112,12 @@ export const CsvWizard = ({ fileName, bytes, onImport, onCancel }: Props) => {
                 {names.map((n, i) => (
                   <th key={i}>
                     <div>{n}</div>
-                    <select
-                      aria-label={`Тип стовпця ${n}`}
+                    <Select
+                      ariaLabel={`Тип стовпця ${n}`}
                       value={typeOf(i)}
-                      onChange={(e) => setTypes({ ...types, [i]: Object.values(ColumnTypes).find((t) => t === e.target.value) ?? ColumnTypes.Text })}
-                    >
-                      {Object.values(ColumnTypes).map((t) => (
-                        <option key={t} value={t}>
-                          {TYPE_LABEL[t]}
-                        </option>
-                      ))}
-                    </select>
+                      options={Object.values(ColumnTypes).map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
+                      onChange={(t) => setTypes({ ...types, [i]: t })}
+                    />
                   </th>
                 ))}
               </tr>

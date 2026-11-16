@@ -571,7 +571,8 @@
   gap: 10px 14px;
 }
 
-.edu-sql-sb-form label {
+.edu-sql-sb-form label,
+.edu-sql-sb-form .edu-sql-sb-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -580,9 +581,28 @@
   color: var(--sql-muted);
 }
 
-.edu-sql-sb-form input:not([type="checkbox"]),
-.edu-sql-sb-form select,
-.edu-sql-sb-preview select {
+.edu-sql-sb-form,
+.edu-sql-sb-preview {
+  /* The site-styled dropdown (select.css) in the detective's night colors. */
+  --edu-select-height: 38px;
+  --edu-select-bg: var(--sql-code-bg);
+  --edu-select-list-bg: var(--sql-panel);
+  --edu-select-fg: var(--sql-fg);
+  --edu-select-muted: var(--sql-muted);
+  --edu-select-line: var(--sql-border);
+  --edu-select-hover-line: rgba(165, 180, 252, 0.4);
+  --edu-select-accent: var(--sql-amber);
+  --edu-select-active-bg: var(--sql-panel-2);
+  --edu-select-active-fg: var(--sql-fg);
+}
+
+.edu-sql-sb-form .edu-select,
+.edu-sql-sb-preview .edu-select {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.edu-sql-sb-form input:not([type="checkbox"]) {
   min-height: 38px;
   padding: 6px 10px;
   border-radius: 10px;
@@ -619,9 +639,8 @@
   margin-bottom: 4px;
 }
 
-.edu-sql-sb-preview select {
-  min-height: 30px;
-  padding: 2px 6px;
+.edu-sql-sb-preview .edu-select {
+  --edu-select-height: 30px;
   font-size: 12px;
 }
 
