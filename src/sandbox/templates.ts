@@ -198,7 +198,7 @@ const caseTemplates: Template[] = cases.map((c) => ({
   id: `case-${c.id}`,
   title: `База справи «${c.title}»`,
   icon: "🕵️",
-  note: `Таблиці зі справи SQL-детектива (${c.grades} класи) для вільних запитів.`,
+  note: "Таблиці зі справи SQL-детектива для вільних запитів.",
   setup: c.setup,
   starter: `SELECT * FROM ${c.tables[0]?.name ?? "sqlite_master"} LIMIT 20;\n`
 }))
