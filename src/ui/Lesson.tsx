@@ -31,7 +31,7 @@ export const Lesson = ({ step }: { readonly step: LessonStep }) => (
       </tbody>
     </table>
     <p className="edu-sql-lesson-try">
-      <span aria-hidden="true">👉</span> Приклад уже в редакторі. Натисни «Виконати», а потім зміни запит і подивись, що вийде.
+      <span aria-hidden="true">👉</span> Приклад уже в редакторі. Натисни <strong className="rt-ui">Виконати</strong>, а потім зміни запит і подивись, що вийде.
     </p>
   </div>
 )

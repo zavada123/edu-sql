@@ -34,6 +34,8 @@ import { SandboxPractice } from "./SandboxPractice.tsx"
 import { SandboxHistory, SandboxSchema } from "./SandboxSchema.tsx"
 import type { SandboxSnapshot } from "./snapshot.ts"
 import "../sql.css"
+import "../rich-text.css"
+import { RichText } from "../RichText.tsx"
 import "./sandbox.css"
 
 export interface SqlSandboxProps {
@@ -581,7 +583,7 @@ export const SqlSandbox = ({ createWorker, initial, shared, onChange, onNewDatab
                       <button type="button" className="edu-sql-btn edu-sql-btn-ghost" onClick={runSelected} disabled={busy || !client} title="Ctrl + Shift + Enter">
                         Виконати виділене
                       </button>
-                      <span className="edu-sql-term-hint">{busy ? "Виконую…" : "Ctrl + Enter"}</span>
+                      <span className="edu-sql-term-hint">{busy ? "Виконую…" : <RichText text="[k]Ctrl+Enter[/k]" />}</span>
                     </>
                   }
                 />

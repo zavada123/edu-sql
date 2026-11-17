@@ -120,7 +120,7 @@ export const SandboxResults = ({ view }: { readonly view: RunView }) => {
       <div className="edu-sql-placeholder">
         <span aria-hidden="true">🗄️</span>
         <p>
-          Тут з'являться результати. Напиши запит і натисни «Виконати все» (Ctrl + Enter). Кілька запитів розділяй крапкою з комою <code>;</code>.
+          Тут з'являться результати. Напиши запит і натисни <strong className="rt-ui">Виконати все</strong> (<RichText text="[k]Ctrl+Enter[/k]" />). Кілька запитів розділяй крапкою з комою <code>;</code>.
         </p>
       </div>
     )

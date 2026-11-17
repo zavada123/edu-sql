@@ -28,6 +28,7 @@ import { Schema } from "./Schema.tsx"
 import { SqlEditor } from "./SqlEditor.tsx"
 import { Story } from "./Story.tsx"
 import "./sql.css"
+import "./rich-text.css"
 
 interface Props {
   readonly case: Case
@@ -295,7 +296,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
                     Очистити
                   </button>
                   <span className="edu-sql-term-hint">
-                    {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : sandbox ? "Ctrl + Enter" : "Завантажую базу даних…"}
+                    {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : sandbox ? <RichText text="[k]Ctrl+Enter[/k]" /> : "Завантажую базу даних…"}
                   </span>
                 </>
               }

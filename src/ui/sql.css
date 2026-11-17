@@ -11,6 +11,16 @@
   --sql-fg: #e8eaff;
   --sql-muted: #9aa3d4;
   --sql-amber: #fbbf24;
+  --rt-accent: #fbbf24;
+  --rt-key-bg: #222859;
+  --rt-key-line: rgba(165, 180, 252, 0.45);
+  --rt-key-text: #e8eaff;
+  --rt-red: #fb7185;
+  --rt-green: #34d399;
+  --rt-blue: #93c5fd;
+  --rt-yellow: #fde047;
+  --rt-orange: #fdba74;
+  --rt-purple: #c4b5fd;
   --sql-amber-2: #f59e0b;
   --sql-cyan: #67e8f9;
   --sql-violet: #a78bfa;
@@ -1423,4 +1433,21 @@
 
 .edu-sql.is-full .edu-sql-table-scroll {
   max-height: min(60vh, 640px);
+}
+
+/* Marked text (rich-text.css) on light paper, hint and error cards: the dark-theme colors are too pale there. */
+.edu-sql-case,
+.edu-sql-end,
+.edu-sql-hint,
+.edu-sql-wrong {
+  --rt-accent: #9a3412;
+  --rt-key-bg: #fff;
+  --rt-key-line: #c9b896;
+  --rt-key-text: #2b2118;
+  --rt-red: #dc2626;
+  --rt-green: #15803d;
+  --rt-blue: #2563eb;
+  --rt-yellow: #a16207;
+  --rt-orange: #c2410c;
+  --rt-purple: #7e22ce;
 }
