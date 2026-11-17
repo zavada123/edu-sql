@@ -1,4 +1,6 @@
+import { Fragment } from "react"
 import { tokenize } from "./highlight.ts"
+import { parseRich, type RichPart } from "./rich-text.ts"
 
 /** Splits a text of a case into plain parts and SQL parts. SQL is marked with `backticks`. */
 export const splitSql = (text: string): { readonly sql: boolean; readonly text: string }[] =>
@@ -18,7 +20,39 @@ export const SqlCode = ({ code }: { readonly code: string }) => (
   </code>
 )
 
-/** A text of a case where SQL in `backticks` is shown as code, so that it is not mixed with the words around it. */
+/** One part of a marked text (rich-text.ts). Code is SQL here, so it gets the editor colors. */
+const Part = ({ part }: { readonly part: RichPart }) => {
+  switch (part.kind) {
+    case "text":
+      return <>{part.text}</>
+    case "ui":
+      return <strong className="rt-ui">{part.text}</strong>
+    case "code":
+      return <SqlCode code={part.text} />
+    case "color":
+      return <span className={`rt-color rt-${part.color}`}>{part.text}</span>
+    case "keys":
+      return (
+        <span className="rt-keys">
+          {part.keys.map((key, i) => (
+            <Fragment key={i}>
+              {i > 0 && <span className="rt-plus">+</span>}
+              <kbd className="rt-key">{key}</kbd>
+            </Fragment>
+          ))}
+        </span>
+      )
+  }
+}
+
+/**
+ * A text of a case with the markup of all trainers (rich-text.ts): SQL in `backticks` is shown as code, so that it is
+ * not mixed with the words around it; **кнопка** and [k]Ctrl+Enter[/k] stand out. Never sets HTML.
+ */
 export const RichText = ({ text }: { readonly text: string }) => (
-  <>{splitSql(text).map((p, i) => (p.sql ? <SqlCode key={i} code={p.text} /> : <span key={i}>{p.text}</span>))}</>
+  <>
+    {parseRich(text).map((part, i) => (
+      <Part key={i} part={part} />
+    ))}
+  </>
 )

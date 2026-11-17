@@ -271,14 +271,14 @@ export const lostCup: Case = {
             },
             {
               speaker: "robot",
-              text: "Почнемо з кімнат. Запит `SELECT * FROM rooms` означає «покажи всі стовпці з таблиці `rooms`». Я вже написав його. Натисни «Виконати»."
+              text: "Почнемо з кімнат. Запит `SELECT * FROM rooms` означає «покажи всі стовпці з таблиці `rooms`». Я вже написав його. Натисни **Виконати**."
             }
           ],
           task: "Покажи всі рядки й усі стовпці таблиці `rooms`.",
           solution: "SELECT * FROM rooms",
           ordered: false,
           mustUse: [],
-          hints: ["Просто натисни кнопку «Виконати» або Ctrl+Enter."],
+          hints: ["Просто натисни кнопку **Виконати** або [k]Ctrl+Enter[/k]."],
           starter: "SELECT * FROM rooms",
           clue: "Кубок стояв у кімнаті 214, «Лабораторія робототехніки», на 2 поверсі."
         },

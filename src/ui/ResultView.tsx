@@ -9,7 +9,7 @@ export const ResultView = ({ result }: { readonly result: RunResult | undefined 
     return (
       <div className="edu-sql-placeholder">
         <span aria-hidden="true">🔍</span>
-        <p>Тут з'явиться відповідь бази даних. Напиши запит і натисни «Виконати».</p>
+        <p>Тут з'явиться відповідь бази даних. Напиши запит і натисни <strong className="rt-ui">Виконати</strong>.</p>
       </div>
     )
   if (result.kind === "error")
