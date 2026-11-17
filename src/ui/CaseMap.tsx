@@ -26,7 +26,7 @@ export const CaseMap = ({ case: c, progress, currentId, viewing, onOpen, actions
           <span>SQL</span>
         </div>
         <div className="edu-sql-head-text">
-          <p className="edu-sql-kicker">Справа · {c.grades} клас</p>
+          <p className="edu-sql-kicker">Справа</p>
           <h2 className="edu-sql-title">{c.title}</h2>
         </div>
         <div className="edu-sql-meter" aria-label={`Розкрито ${done} з ${total}`}>
