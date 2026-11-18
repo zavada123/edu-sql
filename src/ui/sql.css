@@ -21,6 +21,8 @@
   --rt-yellow: #fde047;
   --rt-orange: #fdba74;
   --rt-purple: #c4b5fd;
+  --rt-name: #fef3c7;
+  --rt-name-bg: rgba(250, 204, 21, 0.22);
   --sql-amber-2: #f59e0b;
   --sql-cyan: #67e8f9;
   --sql-violet: #a78bfa;
@@ -1450,4 +1452,6 @@
   --rt-yellow: #a16207;
   --rt-orange: #c2410c;
   --rt-purple: #7e22ce;
+  --rt-name: #2b2118;
+  --rt-name-bg: rgba(250, 204, 21, 0.35);
 }
