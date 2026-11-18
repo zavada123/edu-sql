@@ -147,4 +147,4 @@ The demo saves progress in `localStorage`. With `?embed=1` it hides its header a
 
 ## License
 
-MIT. The story, characters and drawings are original.
+[MIT](LICENSE). The story, characters and drawings are original. SQLite runs in the browser through [sql.js](https://github.com/sql-js/sql.js) (MIT, installed as a dependency); SQLite itself is in the public domain.
