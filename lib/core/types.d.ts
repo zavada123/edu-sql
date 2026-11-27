@@ -96,8 +96,45 @@ export interface LessonStep {
     /** A query that the editor starts with, so that the student can run it at once. */
     readonly example: string;
 }
-/** A step that the student must solve: a query or an answer. */
-export type TaskStep = QueryStep | AnswerStep;
+/**
+ * A test record for a build step: SQL that runs on the database after the student's SQL, for example an
+ * `INSERT` that the table must refuse. The trainer runs it on the student's database and on the database of
+ * the reference solution. It passes when both are refused, or both are accepted with the same last table.
+ */
+export interface Trial {
+    /** What the record is, shown to the student, e.g. "Тварина без клички". */
+    readonly label: string;
+    readonly sql: string;
+    /** Why the result is wrong when the student's table behaves differently. Words in `backticks` are SQL. */
+    readonly why: string;
+}
+/**
+ * A step where the student changes the database: `CREATE TABLE`, `INSERT`, `ALTER TABLE`, `UPDATE`.
+ * The trainer compares the columns of `tables` and the rows of `data` with the result of `solution`,
+ * then runs the trials. The text of the SQL is not compared, so every correct form is accepted.
+ */
+export interface BuildStep {
+    readonly kind: "build";
+    readonly id: string;
+    readonly title: string;
+    readonly story: readonly StoryLine[];
+    readonly task: string;
+    /** The reference SQL. Later steps start from the database it makes. */
+    readonly solution: string;
+    /** SQL that the trainer runs after the solution for the next steps, e.g. records that the robot adds. "" for none. */
+    readonly after: string;
+    /** Tables whose column names and types must match the reference. The order of columns is free. */
+    readonly tables: readonly string[];
+    /** Tables whose rows must match the reference. */
+    readonly data: readonly string[];
+    readonly trials: readonly Trial[];
+    readonly mustUse: readonly string[];
+    readonly hints: readonly string[];
+    readonly starter: string;
+    readonly clue: string;
+}
+/** A step that the student must solve: a query, an answer or a change of the database. */
+export type TaskStep = QueryStep | AnswerStep | BuildStep;
 export type Step = TaskStep | LessonStep;
 export interface Chapter {
     readonly id: string;
@@ -114,6 +151,8 @@ export interface Case {
     readonly summary: string;
     /** Grades the case is made for, e.g. "7–11". */
     readonly grades: string;
+    /** The name of the database file in the editor title, e.g. "ліцей.db". */
+    readonly file: string;
     /** SQL words for the buttons under the editor, for one tap on a phone. */
     readonly chips: readonly string[];
     /** SQL that creates and fills the database. */
@@ -152,6 +191,35 @@ export type Verdict = {
     readonly words: readonly string[];
 } | {
     readonly kind: "wrongAnswer";
+} | {
+    readonly kind: "missingTable";
+    readonly table: string;
+} | {
+    readonly kind: "missingColumn";
+    readonly table: string;
+    readonly column: string;
+} | {
+    readonly kind: "extraColumn";
+    readonly table: string;
+    readonly column: string;
+} | {
+    readonly kind: "columnType";
+    readonly table: string;
+    readonly column: string;
+    readonly got: string;
+    readonly want: string;
+} | {
+    readonly kind: "rowCount";
+    readonly table: string;
+    readonly got: number;
+    readonly want: number;
+} | {
+    readonly kind: "rowValues";
+    readonly table: string;
+} | {
+    readonly kind: "trials";
+    readonly failed: number;
+    readonly total: number;
 };
 /** Progress in a case. */
 export interface Progress {

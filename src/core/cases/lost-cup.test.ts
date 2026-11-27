@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { allSteps, caseScore, checkAnswer, checkCase, checkQuery, currentStep, emptyProgress, isStepDone, taskSteps } from "../check.ts"
+import { allSteps, caseScore, checkCase, checkQuery, currentStep, emptyProgress, isStepDone, taskSteps, checkStep, referenceAnswer, taskText } from "../check.ts"
 import { Sandbox } from "../run.ts"
 import { loadSqlForTests } from "../testing.ts"
 import { lostCup } from "./lost-cup.ts"
@@ -24,8 +24,7 @@ describe("case «lost cup»", () => {
 
   it("accepts every reference solution", () => {
     for (const step of taskSteps(lostCup)) {
-      if (step.kind === "query") expect(checkQuery(sandbox, step, step.solution), step.id).toEqual({ kind: "ok" })
-      else expect(checkAnswer(step, step.accepted[0] ?? ""), step.id).toEqual({ kind: "ok" })
+      expect(checkStep(sandbox, step, referenceAnswer(step)), step.id).toEqual({ kind: "ok" })
     }
   })
 
@@ -62,7 +61,7 @@ describe("case «lost cup»", () => {
   })
 
   it("checks the whole case again from saved answers", () => {
-    const answers = Object.fromEntries(taskSteps(lostCup).map((s) => [s.id, s.kind === "query" ? s.solution : (s.accepted[0] ?? "")]))
+    const answers = Object.fromEntries(taskSteps(lostCup).map((s) => [s.id, referenceAnswer(s)]))
     expect(checkCase(sandbox, lostCup, answers).every((r) => r.passed)).toBe(true)
     const forged = { ...answers, culprit: "Марко Ковальчук", rooms: "SELECT 1" }
     expect(checkCase(sandbox, lostCup, forged).filter((r) => !r.passed).map((r) => r.stepId)).toEqual(["rooms", "culprit"])
@@ -90,7 +89,7 @@ describe("case «lost cup»", () => {
       ...lostCup.ending.map((l) => l.text),
       ...allSteps(lostCup).flatMap((s) => [
         ...s.story.map((l) => l.text),
-        ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, s.kind === "query" ? s.task : s.question])
+        ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, taskText(s)])
       ])
     ]
     for (const t of texts) expect((t.match(/`/g) ?? []).length % 2, t).toBe(0)

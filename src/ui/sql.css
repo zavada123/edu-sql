@@ -1455,3 +1455,76 @@
   --rt-name: #2b2118;
   --rt-name-bg: rgba(250, 204, 21, 0.35);
 }
+
+/* Trials of a build step: each test record, accepted or refused, right or wrong. */
+
+.edu-sql-trials {
+  padding: 10px 14px 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e4d6b4;
+  animation: edu-sql-rise 0.3s ease both;
+  --rt-accent: #9a3412;
+  --rt-key-bg: #fff;
+  --rt-key-line: #c9b896;
+  --rt-key-text: #2b2118;
+  --rt-name: #2b2118;
+  --rt-name-bg: rgba(250, 204, 21, 0.35);
+}
+
+.edu-sql-trials-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.edu-sql-trials ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.edu-sql-trials li {
+  display: grid;
+  grid-template-columns: 1.4em 1fr auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.edu-sql-trials li.is-bad {
+  background: #ffe4e6;
+}
+
+.edu-sql-trial-mark {
+  font-weight: 800;
+  text-align: center;
+}
+
+.is-ok > .edu-sql-trial-mark {
+  color: #047857;
+}
+
+.is-bad > .edu-sql-trial-mark {
+  color: #be123c;
+}
+
+.edu-sql-trial-label {
+  overflow-wrap: anywhere;
+}
+
+.edu-sql-trial-outcome {
+  font-size: 0.85em;
+  color: var(--sql-ink-muted);
+  white-space: nowrap;
+}
+
+.edu-sql-trial-why {
+  grid-column: 2 / -1;
+  margin: 0;
+  color: #9f1239;
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}

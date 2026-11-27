@@ -1,3 +1,4 @@
+import { checkBuild, stepSandbox } from "./build.ts"
 import type { Sandbox } from "./run.ts"
 import type { AnswerStep, Case, Cell, Progress, QueryStep, Report, ResultTable, Step, StepCheck, TaskStep, Verdict } from "./types.ts"
 
@@ -105,7 +106,30 @@ export const verdictMessage = (v: Verdict): string => {
       return `Результат правильний, але в цьому завданні треба використати ${v.words.map((w) => `\`${w}\``).join(", ")}.`
     case "wrongAnswer":
       return "Ні, це не так. Перевір ще раз результати своїх запитів."
+    case "missingTable":
+      return `Таблиці \`${v.table}\` у базі немає. Перевір назву після \`CREATE TABLE\`.`
+    case "missingColumn":
+      return `У таблиці \`${v.table}\` немає стовпця \`${v.column}\`. Перевір назви стовпців у дужках.`
+    case "extraColumn":
+      return `У таблиці \`${v.table}\` є зайвий стовпець \`${v.column}\`. Залиш лише ті, що названі в завданні.`
+    case "columnType":
+      return `Стовпець \`${v.column}\` ${v.got === "" ? "не має типу" : `має тип \`${v.got}\``}, а тут потрібен ${TYPE_NAMES[v.want] ?? v.want}.`
+    case "rowCount":
+      return `У таблиці \`${v.table}\` ${v.got} ${plural(v.got, "рядок", "рядки", "рядків")}, а має бути ${v.want}.`
+    case "rowValues":
+      return `Кількість рядків у таблиці \`${v.table}\` правильна, але значення не ті. Перевір числа, лапки й порядок значень у \`VALUES\`.`
+    case "trials":
+      return `Таблиця не пройшла ${v.failed} з ${v.total} ${plural(v.total, "випробування", "випробувань", "випробувань")}. Подивись, які записи вона пропустила або відхилила.`
   }
+}
+
+/** How the types are named in the messages about a column type. */
+const TYPE_NAMES: Readonly<Record<string, string>> = {
+  INTEGER: "`INTEGER` (ціле число)",
+  TEXT: "`TEXT` (текст)",
+  REAL: "`REAL` (дробове число)",
+  NUMERIC: "`NUMERIC` (число)",
+  BLOB: "`BLOB`"
 }
 
 /** Ukrainian plural form for a count. */
@@ -117,6 +141,12 @@ export const plural = (n: number, one: string, few: string, many: string): strin
   if (u >= 2 && u <= 4) return few
   return many
 }
+
+/** The reference query or the first accepted answer: a text that solves the step. */
+export const referenceAnswer = (step: TaskStep): string => (step.kind === "answer" ? (step.accepted[0] ?? "") : step.solution)
+
+/** What the student must do: the task of a query or build step, or the question of an answer step. */
+export const taskText = (step: TaskStep): string => (step.kind === "answer" ? step.question : step.task)
 
 export const allSteps = (c: Case): Step[] => c.chapters.flatMap((ch) => ch.steps)
 
@@ -165,9 +195,20 @@ export const checkCase = (sandbox: Sandbox, c: Case, answers: Readonly<Record<st
   taskSteps(c).map((step) => {
     const answer = Object.hasOwn(answers, step.id) ? answers[step.id] : undefined
     if (answer === undefined) return { stepId: step.id, passed: false }
-    const verdict = step.kind === "query" ? checkQuery(sandbox, step, answer) : checkAnswer(step, answer)
-    return { stepId: step.id, passed: verdict.kind === "ok" }
+    return { stepId: step.id, passed: checkStep(stepSandbox(sandbox, c, step.id), step, answer).kind === "ok" }
   })
+
+/** Checks the query, the answer or the build of a task step on the database of the step. */
+export const checkStep = (base: Sandbox, step: TaskStep, text: string): Verdict => {
+  switch (step.kind) {
+    case "query":
+      return checkQuery(base, step, text)
+    case "answer":
+      return checkAnswer(step, text)
+    case "build":
+      return checkBuild(base, step, text).verdict
+  }
+}
 
 export const makeReport = (c: Case, p: Progress, stepId: string): Report => {
   const steps = taskSteps(c)

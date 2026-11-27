@@ -452,6 +452,7 @@ export const fakeVotes: Case = {
   summary:
     "За одну ніч проєкт «Розумна теплиця» набрав стільки голосів, скільки за весь тиждень. До полудня директорка має назвати переможця шкільного конкурсу. Разом з роботом Бітом перевір голоси, входи на сайт і пристрої, щоб дізнатися, хто накрутив голоси. Тут знадобляться `DISTINCT`, `HAVING`, `LEFT JOIN`, функції тексту й підзапити.",
   grades: "9–11",
+  file: "ліцей.db",
   chips: ["SELECT", "*", "FROM", "WHERE", "AND", "=", "''", "ORDER BY", "DESC", "LIMIT", "COUNT(*)", "DISTINCT", "GROUP BY", "HAVING", "JOIN", "LEFT JOIN", "ON", "IS NULL", "IN", "NOT"],
   setup,
   tables: [
