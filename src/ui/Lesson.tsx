@@ -7,6 +7,14 @@ export const Lesson = ({ step }: { readonly step: LessonStep }) => (
     <p className="edu-sql-lesson-kicker">
       <span aria-hidden="true">📘</span> Урок детектива
     </p>
+    <div className="edu-sql-why">
+      <span>
+        <span aria-hidden="true">🎯</span> Навіщо це
+      </span>
+      <p>
+        <RichText text={step.why} />
+      </p>
+    </div>
     {step.explain.map((p, i) => (
       <p key={i}>
         <RichText text={p} />
@@ -30,6 +38,21 @@ export const Lesson = ({ step }: { readonly step: LessonStep }) => (
         ))}
       </tbody>
     </table>
+    <div className="edu-sql-instead">
+      <span>
+        <span aria-hidden="true">🤔</span> Чому не інакше
+      </span>
+      <ul>
+        {step.instead.map((n) => (
+          <li key={n.way}>
+            <strong>
+              <RichText text={n.way} />
+            </strong>
+            : <RichText text={n.problem} />
+          </li>
+        ))}
+      </ul>
+    </div>
     <p className="edu-sql-lesson-try">
       <span aria-hidden="true">👉</span> Приклад уже в редакторі. Натисни <strong className="rt-ui">Виконати</strong>, а потім зміни запит і подивись, що вийде.
     </p>

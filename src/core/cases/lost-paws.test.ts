@@ -75,9 +75,9 @@ describe("case «lost paws»", () => {
       want: "INTEGER"
     })
     expect(check("create-pets", "CREATE TABLE pets (id INTEGER, name TEXT, species TEXT, age INTEGER, weight REAL, color TEXT)").verdict.kind).toBe("extraColumn")
-    expect(check("insert-cards", "INSERT INTO pets VALUES (1, 'Бублик', 'кіт', 2, 4.1)").verdict).toEqual({ kind: "rowCount", table: "pets", got: 1, want: 3 })
-    const swapped = "INSERT INTO pets VALUES (1, 'Бублик', 'кіт', 2, 4.1), (2, 'Рекс', 'пес', 5, 23.5), (3, 'Хмаринка', 'кролик', 1.8, 1)"
-    expect(check("insert-cards", swapped).verdict).toEqual({ kind: "rowValues", table: "pets" })
+    expect(check("insert-many", "INSERT INTO pets VALUES (2, 'Рекс', 'пес', 5, 23.5)").verdict).toEqual({ kind: "rowCount", table: "pets", got: 2, want: 3 })
+    const swapped = "INSERT INTO pets VALUES (2, 'Рекс', 'пес', 5, 23.5), (3, 'Хмаринка', 'кролик', 1.8, 1)"
+    expect(check("insert-many", swapped).verdict).toEqual({ kind: "rowValues", table: "pets" })
     const error = check("fix-volunteers", "CREATE TABLE volunteers (id INTEGER, name TEXT, phone TEXT, age INTEGER,)").verdict
     expect(error.kind).toBe("error")
     // Without a comma SQLite reads "TEXT phone TEXT" as the type of `name`: no error, but no column `phone`.
@@ -96,16 +96,17 @@ describe("case «lost paws»", () => {
         status TEXT DEFAULT 'шукає дім', chip TEXT,
         CHECK (age > -1), CHECK (species = 'кіт' OR species = 'пес' OR species = 'кролик'), UNIQUE (chip)
       )`
-    expect(check("rule-check", rules).verdict).toEqual({ kind: "ok" })
+    expect(check("check-species", rules).verdict).toEqual({ kind: "ok" })
     const adoptions = `CREATE TABLE adoptions (id INTEGER PRIMARY KEY, pet_id INTEGER UNIQUE, person_id INTEGER, day TEXT,
       FOREIGN KEY (pet_id) REFERENCES pets(id), FOREIGN KEY (person_id) REFERENCES people(id))`
     expect(check("create-adoptions", adoptions).verdict).toEqual({ kind: "ok" })
-    const vet = "ALTER TABLE pets ADD COLUMN vaccinated INTEGER DEFAULT 0; UPDATE pets SET status = 'вдома' WHERE id IN (2, 6, 8, 10)"
-    expect(check("vet-update", vet).verdict).toEqual({ kind: "ok" })
+    expect(check("add-vaccinated", "alter table PETS add vaccinated int default 0").verdict).toEqual({ kind: "ok" })
+    expect(check("update-status", "UPDATE pets SET status = 'вдома' WHERE id IN (2, 6, 8, 10, 11)").verdict).toEqual({ kind: "ok" })
+    expect(check("update-status", "UPDATE pets SET status = 'вдома'").verdict).toEqual({ kind: "rowValues", table: "pets" })
   })
 
   it("shows which trials failed", () => {
-    const noNull = "DROP TABLE pets; CREATE TABLE pets (id INTEGER PRIMARY KEY, name TEXT, species TEXT, age INTEGER, weight REAL, status TEXT DEFAULT 'шукає дім')"
+    const noNull = "DROP TABLE pets; CREATE TABLE pets (id INTEGER PRIMARY KEY, name TEXT, species TEXT, age INTEGER, weight REAL)"
     const r = check("rule-name", noNull)
     expect(r.verdict).toEqual({ kind: "trials", failed: 2, total: 4 })
     expect(r.trials.filter((t) => !t.passed).map((t) => [t.label, t.accepted])).toEqual([
@@ -119,14 +120,14 @@ describe("case «lost paws»", () => {
   it("does not let the student turn the foreign keys off", () => {
     const off = "PRAGMA foreign_keys = OFF; CREATE TABLE adoptions (id INTEGER PRIMARY KEY, pet_id INTEGER UNIQUE REFERENCES pets(id), person_id INTEGER REFERENCES people(id), day TEXT)"
     expect(check("create-adoptions", off).verdict).toEqual({ kind: "ok" })
-    expect(check("vet-update", "DROP TABLE pets").verdict.kind).toBe("error")
+    expect(check("add-vaccinated", "DROP TABLE pets").verdict.kind).toBe("error")
   })
 
   it("keeps the facts of the story true", () => {
     const db = finalDb()
     expect(rows(db, "SELECT COUNT(*) FROM old_journal")).toEqual([[16]])
     expect(rows(db, "SELECT COUNT(*) FROM pets")).toEqual([[12]])
-    expect(rows(db, "SELECT name FROM pets WHERE status = 'вдома' ORDER BY id")).toEqual([["Рекс"], ["Мурка"], ["Пухнастик"], ["Зефірка"]])
+    expect(rows(db, "SELECT name FROM pets WHERE status = 'вдома' ORDER BY id")).toEqual([["Рекс"], ["Мурка"], ["Пухнастик"], ["Зефірка"], ["Ведмідь"]])
     expect(rows(db, "SELECT id, name FROM pets WHERE id IN (4, 7, 9, 11) ORDER BY id")).toEqual([
       [4, "Луна"],
       [7, "Тайсон"],
@@ -150,18 +151,21 @@ describe("case «lost paws»", () => {
 
   it("runs the example of every lesson on the database of the lesson", () => {
     const lessons = allSteps(lostPaws).flatMap((s) => (s.kind === "lesson" ? [s] : []))
-    expect(lessons).toHaveLength(6)
+    expect(lessons).toHaveLength(14)
     for (const l of lessons) expect(base(l.id).run(l.example).kind, l.id).toBe("table")
   })
 
-  it("starts the broken volunteer command with an error, and the first pets command with a table", () => {
-    expect(base("fix-volunteers").run(buildStep("fix-volunteers").starter).kind).toBe("error")
-    for (const id of ["key-pets", "rule-name", "rule-chip", "rule-check"]) expect(base(id).run(buildStep(id).starter).kind, id).toBe("empty")
+  it("starts the broken commands with an error, and every new version of pets from the last one", () => {
+    for (const id of ["fix-volunteers", "insert-error"]) expect(base(id).run(buildStep(id).starter).kind, id).toBe("error")
+    expect(base("silent-comma").run(buildStep("silent-comma").starter).kind).toBe("empty")
+    expect(check("silent-comma", buildStep("silent-comma").starter).verdict.kind).toBe("missingColumn")
+    for (const id of ["key-pets", "rule-name", "rule-status", "rule-chip", "check-age", "check-species"])
+      expect(base(id).run(buildStep(id).starter).kind, id).toBe("empty")
   })
 
   it("describes the live tables for the schema panel", () => {
     const tables = describeTables(base("who-adopted"), lostPaws.tables)
-    expect(tables.map((t) => t.name)).toEqual(["old_journal", "volunteers", "pets", "people", "adoptions"])
+    expect(tables.map((t) => t.name)).toEqual(["old_journal", "cages", "volunteers", "feeds", "pets", "people", "adoptions"])
     const adoptions = tables.find((t) => t.name === "adoptions")
     expect(adoptions?.columns.map((c) => c.note)).toEqual(["(ключ)", "(pets.id)", "(people.id)", ""])
     expect(tables[0]?.note).toBe(lostPaws.tables[0]?.note)
@@ -177,7 +181,7 @@ describe("case «lost paws»", () => {
       ...lostPaws.ending.map((l) => l.text),
       ...allSteps(lostPaws).flatMap((s) => [
         ...s.story.map((l) => l.text),
-        ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, taskText(s)]),
+        ...(s.kind === "lesson" ? [s.why, ...s.explain, ...s.notes.map((n) => n.text), ...s.instead.flatMap((n) => [n.way, n.problem])] : [...s.hints, s.clue, taskText(s)]),
         ...(s.kind === "build" ? s.trials.flatMap((t) => [t.label, t.why]) : [])
       ])
     ]

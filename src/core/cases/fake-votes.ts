@@ -2,7 +2,7 @@ import type { Case } from "../types.ts"
 
 /**
  * Case 2: someone added fake votes to the school project contest on Saturday night.
- * Topics: DISTINCT, MIN/MAX, substr, HAVING, LEFT JOIN, IS NULL, JOIN of three tables, subqueries.
+ * Topics: DISTINCT, MIN/MAX, substr, strftime, HAVING, IS NULL, LEFT JOIN, JOIN of three tables, subqueries, NOT IN.
  * The answer is Олександр Руденко (user 58, team «Еко-дрон»): he logged in on «Ноутбук-07» at 01:47,
  * and from 01:50 the same laptop created 37 accounts without a class that voted 57 times for «Розумна теплиця».
  * Without these votes «Розумна теплиця» still wins, 79 to 74. The data comes from a seeded generator,
@@ -539,6 +539,11 @@ export const fakeVotes: Case = {
             "`JOIN … ON …` ставить поруч рядки двох таблиць з однаковим номером. Наприклад, у голосі є лише `project_id`, а назва проєкту лежить у таблиці `projects`.",
             "У цій справі база велика: сотні рядків. Переглядати її очима вже не вийде, тому рахуй і групуй."
           ],
+          why: "Ця справа складніша, і в ній знадобиться все з першої. Шпаргалка нагадає, у якому порядку пишуть слова запиту і навіщо кожне з них.",
+          instead: [
+            { way: "`ORDER BY` перед `WHERE`", problem: "слова запиту мають сталий порядок. Якщо його змінити, база покаже помилку." },
+            { way: "дивитися всі рядки", problem: "у цій справі сотні голосів. Без `GROUP BY` і `COUNT` у них не розібратися." }
+          ],
           syntax: "SELECT … FROM … JOIN … ON … WHERE … GROUP BY … ORDER BY … LIMIT …",
           notes: [
             { code: "WHERE", text: "залишає рядки, що підходять під умову" },
@@ -605,23 +610,39 @@ export const fakeVotes: Case = {
         {
           kind: "lesson",
           id: "lesson-distinct",
-          title: "Урок: DISTINCT, MIN, MAX, AVG",
+          title: "Урок: DISTINCT",
           story: [{ speaker: "robot", text: "Голосів багато. А скільки людей голосувало? Для цього треба рахувати різні значення, а не всі рядки." }],
           explain: [
             "`DISTINCT` («різні») прибирає з результату однакові рядки. `SELECT DISTINCT category FROM projects` покаже кожну категорію лише один раз.",
             "`COUNT(DISTINCT стовпець)` рахує різні значення стовпця. Якщо один акаунт голосував тричі, `COUNT(*)` порахує три рядки, а `COUNT(DISTINCT user_id)` лише один акаунт.",
-            "`MIN` і `MAX` знаходять найменше і найбільше значення. Вони працюють і з числами, і з текстом, і з датами: найраніша дата буде найменшою.",
-            "`AVG` рахує середнє значення, а `SUM` суму. `ROUND(число, 1)` округлює до одного знака після коми."
+            "`DISTINCT` пишуть одразу після `SELECT`. Якщо стовпців кілька, різними мають бути цілі рядки, а не кожен стовпець окремо."
           ],
-          syntax: "SELECT COUNT(DISTINCT стовпець), MIN(стовпець), MAX(стовпець) FROM таблиця",
+          why: "Один учень віддає кілька голосів, тому голосів більше, ніж людей. Щоб дізнатися, скільки людей голосувало, кожного треба порахувати лише один раз.",
+          instead: [
+            { way: "`COUNT(*)`", problem: "рахує всі рядки, тобто голоси. Учень, який проголосував за три проєкти, порахується тричі." },
+            { way: "`GROUP BY user_id`", problem: "покаже по рядку на кожен акаунт, і їх ще доведеться рахувати. `COUNT(DISTINCT user_id)` дає одне число одразу." }
+          ],
+          syntax: "SELECT DISTINCT стовпець FROM таблиця\nSELECT COUNT(DISTINCT стовпець) FROM таблиця",
           notes: [
             { code: "DISTINCT", text: "лише різні рядки" },
-            { code: "COUNT(DISTINCT x)", text: "кількість різних значень `x`" },
-            { code: "MIN(x), MAX(x)", text: "найменше і найбільше значення" },
-            { code: "AVG(x), SUM(x)", text: "середнє значення і сума" },
-            { code: "ROUND(x, 1)", text: "округлити до одного знака" }
+            { code: "COUNT(DISTINCT x)", text: "кількість різних значень `x`" }
           ],
           example: "SELECT DISTINCT category FROM projects"
+        },
+        {
+          kind: "query",
+          id: "voter-classes",
+          title: "Які є класи",
+          story: [
+            { speaker: "robot", text: "Почнемо з простого: які класи є серед акаунтів? У таблиці `users` клас повторюється в кожного учня, а нам треба кожен клас лише раз." }
+          ],
+          task: "Покажи всі різні значення стовпця `class` з таблиці `users`.",
+          solution: "SELECT DISTINCT class FROM users",
+          ordered: false,
+          mustUse: ["DISTINCT"],
+          hints: ["`DISTINCT` пишуть одразу після `SELECT`.", "`SELECT DISTINCT class FROM users`"],
+          starter: "SELECT class FROM users",
+          clue: "У ліцеї шість класів, від 9-А до 11-Б. Але є й сьомий рядок, порожній: `NULL`. У деяких акаунтів клас не вказано."
         },
         {
           kind: "query",
@@ -640,6 +661,29 @@ export const fakeVotes: Case = {
           hints: ["`COUNT(*)` порахує всі голоси, а треба різні акаунти.", "`SELECT COUNT(DISTINCT user_id) FROM votes`"],
           starter: "SELECT COUNT(*) FROM votes",
           clue: "Голосувало 177 різних акаунтів, а учнів у ліцеї лише 140. Звідки взялися ще 37?"
+        },
+        {
+          kind: "lesson",
+          id: "lesson-min-max",
+          title: "Урок: MIN, MAX і AVG",
+          story: [{ speaker: "robot", text: "Ще кілька функцій, які з багатьох рядків дають одне значення: найменше, найбільше, середнє." }],
+          explain: [
+            "`MIN` і `MAX` знаходять найменше і найбільше значення. Вони працюють і з числами, і з текстом, і з датами: найраніша дата буде найменшою.",
+            "`AVG` рахує середнє значення, а `SUM` суму. `ROUND(число, 1)` округлює до одного знака після коми.",
+            "Кілька функцій можна написати в одному `SELECT` через кому. Тоді в результаті буде один рядок з кількома числами."
+          ],
+          why: "Щоб помітити незвичайне, корисно знати межі: коли створили перший і останній акаунт. Значення за межами звичайного часто й є доказом.",
+          instead: [
+            { way: "`ORDER BY … LIMIT 1`", problem: "так теж можна знайти найменше, але для найбільшого потрібен ще один запит. `MIN` і `MAX` дають обидва значення в одному рядку." },
+            { way: "дата `'01.11.2026'`", problem: "у такому записі дати порівнюються неправильно: '15.09' виявиться більшим за '01.11'. Тому в базах дату пишуть як '2026-11-01': рік, місяць, день." }
+          ],
+          syntax: "SELECT MIN(стовпець), MAX(стовпець), AVG(стовпець) FROM таблиця",
+          notes: [
+            { code: "MIN(x), MAX(x)", text: "найменше і найбільше значення" },
+            { code: "AVG(x), SUM(x)", text: "середнє значення і сума" },
+            { code: "ROUND(x, 1)", text: "округлити до одного знака" }
+          ],
+          example: "SELECT MIN(time), MAX(time) FROM votes WHERE day = '2026-11-02'"
         },
         {
           kind: "query",
@@ -661,7 +705,7 @@ export const fakeVotes: Case = {
     {
       id: "night",
       title: "Нічний сплеск",
-      topics: "substr, strftime, групування за годиною",
+      topics: "strftime, substr, групування за виразом",
       steps: [
         {
           kind: "lesson",
@@ -674,6 +718,11 @@ export const fakeVotes: Case = {
             "`strftime('%w', day)` повертає день тижня дати: '0' означає неділю, '1' понеділок, а '6' суботу.",
             "`LOWER(текст)` робить усі літери малими, а `||` склеює тексти: `first_name || ' ' || last_name` дає ім'я та прізвище разом."
           ],
+          why: "Час голосу записано з хвилинами, і кожна хвилина була б окремою групою. Щоб побачити картину по годинах, з часу вирізають лише години. Функція змінює значення ще до групування.",
+          instead: [
+            { way: "`GROUP BY time`", problem: "кожна хвилина стане окремою групою, і вийде кілька сотень рядків. Годин лише 24." },
+            { way: "`time LIKE '02%'`", problem: "так можна знайти одну годину, але не порівняти всі години між собою." }
+          ],
           syntax: "SELECT substr(time, 1, 2), COUNT(*) FROM таблиця GROUP BY substr(time, 1, 2)",
           notes: [
             { code: "substr(t, 1, 2)", text: "перші два символи тексту `t`" },
@@ -682,6 +731,21 @@ export const fakeVotes: Case = {
             { code: "a || b", text: "склеює два тексти" }
           ],
           example: "SELECT day, strftime('%w', day), time, substr(time, 1, 2) FROM logins LIMIT 5"
+        },
+        {
+          kind: "query",
+          id: "weekday-votes",
+          title: "Голоси по днях тижня",
+          story: [
+            { speaker: "robot", text: "Голосування тривало тиждень. Чи був якийсь день незвичайним? Розклади голоси за днем тижня: `strftime('%w', day)` дає номер дня, а `'6'` означає суботу." }
+          ],
+          task: "Для кожного дня тижня покажи його номер (`strftime('%w', day)`) і кількість голосів у цей день.",
+          solution: "SELECT strftime('%w', day), COUNT(*) FROM votes GROUP BY strftime('%w', day)",
+          ordered: false,
+          mustUse: ["STRFTIME", "GROUP BY"],
+          hints: ["Той самий вираз `strftime('%w', day)` напиши і після `SELECT`, і в `GROUP BY`.", "`SELECT strftime('%w', day), COUNT(*) FROM votes GROUP BY strftime('%w', day)`"],
+          starter: "",
+          clue: "У будні приходило від 61 до 75 голосів на день, а в суботу, 7 листопада, аж 101."
         },
         {
           kind: "query",
@@ -740,6 +804,11 @@ export const fakeVotes: Case = {
             "`HAVING` («маючи») перевіряє групи після `GROUP BY`. `HAVING COUNT(*) > 1` залишає лише групи, де більше одного рядка.",
             "В одному запиті можуть бути обидва слова. Спочатку `WHERE` відкидає зайві рядки, потім `GROUP BY` збирає групи, а потім `HAVING` відкидає зайві групи."
           ],
+          why: "Нас цікавлять не всі групи, а лише підозрілі: де голосів забагато. Умову треба поставити на кількість, а кількість з'являється лише після групування.",
+          instead: [
+            { way: "`WHERE COUNT(*) > 1`", problem: "`WHERE` перевіряє окремі рядки ще до групування, коли кількості немає. База покаже помилку." },
+            { way: "`ORDER BY COUNT(*) DESC`", problem: "покаже підозрілих першими, але решта рядків залишиться, і межу доведеться шукати очима." }
+          ],
           syntax: "SELECT стовпець, COUNT(*) FROM таблиця WHERE … GROUP BY стовпець HAVING COUNT(*) > 1",
           notes: [
             { code: "WHERE", text: "умова для рядків, до групування" },
@@ -747,6 +816,19 @@ export const fakeVotes: Case = {
             { code: "HAVING COUNT(*) > 1", text: "групи, де більше одного рядка" }
           ],
           example: "SELECT class, COUNT(*) FROM users GROUP BY class HAVING COUNT(*) > 20"
+        },
+        {
+          kind: "query",
+          id: "contenders",
+          title: "Головні суперники",
+          story: [{ speaker: "robot", text: "Спершу потренуймося на проєктах. Які з них мали реальний шанс на перемогу, тобто набрали щонайменше 70 голосів?" }],
+          task: "Покажи `project_id` і кількість голосів лише тих проєктів, які мають 70 голосів або більше.",
+          solution: "SELECT project_id, COUNT(*) FROM votes GROUP BY project_id HAVING COUNT(*) >= 70",
+          ordered: false,
+          mustUse: ["HAVING"],
+          hints: ["Умова на кількість голосів іде після `GROUP BY`: `HAVING COUNT(*) >= 70`.", "`SELECT project_id, COUNT(*) FROM votes GROUP BY project_id HAVING COUNT(*) >= 70`"],
+          starter: "SELECT project_id, COUNT(*) FROM votes GROUP BY project_id",
+          clue: "Щонайменше 70 голосів набрали лише два проєкти: 1, «Розумна теплиця», і 2, «Еко-дрон». Боротьба йде між ними."
         },
         {
           kind: "query",
@@ -788,8 +870,47 @@ export const fakeVotes: Case = {
     {
       id: "ghosts",
       title: "Акаунти-привиди",
-      topics: "LEFT JOIN, IS NULL",
+      topics: "IS NULL, LEFT JOIN",
       steps: [
+        {
+          kind: "lesson",
+          id: "lesson-null",
+          title: "Урок: NULL і IS NULL",
+          story: [{ speaker: "robot", text: "Ми бачили, що в деяких акаунтів клас порожній. Як знайти такі порожні значення?" }],
+          explain: [
+            "`NULL` означає «значення немає». Це не нуль і не порожній текст `''`.",
+            "З `NULL` не працює знак `=`: умова `class = NULL` не знайде нічого, бо порівняння з невідомим дає «невідомо». Для порожніх значень є окремі слова `IS NULL` і `IS NOT NULL`.",
+            "`COUNT(*)` рахує всі рядки, а `COUNT(class)` лише ті, де клас заповнено. Виконай приклад і порівняй два числа."
+          ],
+          why: "Порожнє поле часто видає підробку: справжнім учням клас записали під час створення акаунта, а той, хто створював фальшиві акаунти, про це не подбав.",
+          instead: [
+            { way: "`class = NULL`", problem: "порівняння з невідомим дає «невідомо», тому рядків не буде, і помилки теж. Це тиха пастка." },
+            { way: "`class = ''`", problem: "порожній текст і `NULL` різні речі. Порожній текст є значенням, а `NULL` означає, що значення немає." }
+          ],
+          syntax: "WHERE стовпець IS NULL\nWHERE стовпець IS NOT NULL",
+          notes: [
+            { code: "NULL", text: "значення немає" },
+            { code: "IS NULL", text: "значення порожнє" },
+            { code: "IS NOT NULL", text: "значення є" },
+            { code: "COUNT(x)", text: "рахує лише рядки, де `x` не `NULL`" }
+          ],
+          example: "SELECT COUNT(*), COUNT(class) FROM users"
+        },
+        {
+          kind: "query",
+          id: "no-class",
+          title: "Акаунти без класу",
+          story: [
+            { speaker: "robot", text: "Я вже написав запит, але він показує 0. Здається, тут пастка з уроку. Виправ умову." }
+          ],
+          task: "Порахуй, скільки акаунтів у таблиці `users` не мають класу (`class` порожній). Одне число.",
+          solution: "SELECT COUNT(*) FROM users WHERE class IS NULL",
+          ordered: false,
+          mustUse: ["IS NULL"],
+          hints: ["Знак `=` з `NULL` не працює.", "`SELECT COUNT(*) FROM users WHERE class IS NULL`"],
+          starter: "SELECT COUNT(*) FROM users WHERE class = NULL",
+          clue: "37 акаунтів не мають класу. Але кожному учневі клас записали у вересні. Хто ж ці 37?"
+        },
         {
           kind: "lesson",
           id: "lesson-left-join",
@@ -798,15 +919,18 @@ export const fakeVotes: Case = {
           explain: [
             "Звичайний `JOIN` залишає лише ті рядки, яким знайшлася пара в другій таблиці. Акаунт без жодного входу на сайт просто зникне з результату.",
             "`LEFT JOIN` залишає всі рядки лівої таблиці (тієї, що в `FROM`). Якщо пари немає, стовпці правої таблиці будуть порожні: `NULL`.",
-            "`NULL` означає «значення немає». Його не можна порівнювати знаком `=`: умова `x = NULL` ніколи не виконується. Пиши `x IS NULL` («порожнє») або `x IS NOT NULL` («не порожнє»).",
+            "Порожні стовпці правої таблиці знаходить умова `IS NULL` з попереднього уроку. Перевіряй стовпець, який у справжньої пари порожнім не буває, наприклад `id`.",
             "Разом `LEFT JOIN` і `WHERE … IS NULL` знаходять рядки без пари: акаунти без входів, пристрої без голосів."
+          ],
+          why: "Найцікавіше часто те, чого немає: акаунт голосував, але жодного разу не входив на сайт. Звичайний `JOIN` такі рядки викидає, а `LEFT JOIN` залишає, щоб ми їх побачили.",
+          instead: [
+            { way: "`JOIN`", problem: "залишає лише рядки з парою. Акаунти без входів зникнуть, а саме їх ми шукаємо." },
+            { way: "`NOT IN (SELECT user_id FROM logins)`", problem: "теж знайде акаунти без входів, і це ми вивчимо наприкінці справи. `LEFT JOIN` ще й показує стовпці обох таблиць." }
           ],
           syntax: "SELECT … FROM ліва l LEFT JOIN права r ON r.номер = l.id WHERE r.id IS NULL",
           notes: [
             { code: "LEFT JOIN", text: "усі рядки лівої таблиці, навіть без пари" },
-            { code: "NULL", text: "значення немає" },
-            { code: "IS NULL", text: "значення порожнє" },
-            { code: "IS NOT NULL", text: "значення є" }
+            { code: "WHERE r.id IS NULL", text: "лише рядки без пари" }
           ],
           example: "SELECT d.name, l.day, l.time FROM devices d LEFT JOIN logins l ON l.device_id = d.id WHERE d.name = 'Ноутбук-01' OR d.name = 'Комп''ютер 305-07'"
         },
@@ -879,6 +1003,11 @@ export const fakeVotes: Case = {
             "Наприклад, у `team_members` є лише номери людини і проєкту. Перший `JOIN` додає ім'я з `users`, другий додає назву з `projects`.",
             "У кожного `JOIN` своя умова `ON`. Дай кожній таблиці короткий псевдонім, щоб не заплутатися в стовпцях."
           ],
+          why: "Доказ розкиданий по трьох таблицях: хто (`users`), з якого пристрою (`devices`) і коли (`logins`). Кожен `JOIN` додає ще одну частину картини.",
+          instead: [
+            { way: "два окремі запити", problem: "можна спершу знайти номер пристрою, а потім входи з нього. Але один запит з двома `JOIN` дає все разом, без переписування номерів вручну." },
+            { way: "стовпці без псевдонімів", problem: "у трьох таблицях є однакові назви стовпців, наприклад `id`. Без `u.`, `d.`, `l.` база не знатиме, який `id` потрібен." }
+          ],
           syntax: "SELECT … FROM a JOIN b ON b.id = a.b_id JOIN c ON c.id = a.c_id",
           notes: [
             { code: "JOIN … ON …", text: "кожна нова таблиця має свою умову" },
@@ -940,15 +1069,18 @@ export const fakeVotes: Case = {
           story: [{ speaker: "robot", text: "Останній урок. Запит можна вкласти в інший запит, як коробку в коробку." }],
           explain: [
             "Підзапит є запитом у дужках усередині іншого запиту. Спочатку база виконує внутрішній запит, а потім використовує його результат у зовнішньому.",
-            "`WHERE id IN (SELECT …)` означає «номер є в списку, який повернув підзапит». `NOT IN` означає «номера немає в цьому списку».",
-            "Підзапит може повертати і одне число. Тоді його порівнюють знаками: `WHERE price > (SELECT AVG(price) FROM …)` знайде все, що дорожче за середнє.",
-            "Підзапити можна вкладати один в один. Читай їх зсередини назовні."
+            "`WHERE id IN (SELECT …)` означає «номер є в списку, який повернув підзапит». Підзапит після `IN` має повертати один стовпець.",
+            "Підзапити можна вкладати один в один. Читай їх зсередини назовні: спершу найглибший, потім той, що його обгортає."
+          ],
+          why: "Іноді відповідь на одне питання потрібна для наступного: спершу «хто такий Руденко», потім «у якій він команді». Підзапит ставить обидва питання одним запитом, без переписування номерів.",
+          instead: [
+            { way: "`IN (58)`", problem: "можна знайти номер окремим запитом і вписати його. Але якщо дані зміняться, номер стане неправильним, а підзапит завжди бере свіжі дані." },
+            { way: "`JOIN`", problem: "часто дає той самий результат. Підзапит зручніший, коли з другої таблиці потрібен лише список номерів, а не її стовпці." }
           ],
           syntax: "SELECT … FROM таблиця WHERE стовпець IN (SELECT стовпець FROM … WHERE …)",
           notes: [
             { code: "IN (SELECT …)", text: "значення є в списку з підзапиту" },
-            { code: "NOT IN (SELECT …)", text: "значення немає в списку" },
-            { code: "> (SELECT AVG(x) …)", text: "більше за число з підзапиту" }
+            { code: "IN (1, 2, 3)", text: "значення є в списку, написаному вручну" }
           ],
           example: "SELECT first_name, last_name, class FROM users WHERE id IN (SELECT user_id FROM team_members WHERE project_id = 3)"
         },
@@ -974,6 +1106,28 @@ export const fakeVotes: Case = {
           ],
           starter: "",
           clue: "Олександр Руденко в команді «Еко-дрон», головного суперника «Теплиці». Якщо «Теплицю» знімуть з конкурсу за накрутку, перше місце дістанеться «Еко-дрону»."
+        },
+        {
+          kind: "lesson",
+          id: "lesson-not-in",
+          title: "Урок: NOT IN",
+          story: [{ speaker: "robot", text: "Щоб порахувати чесні результати, треба відкинути голоси привидів. Тобто залишити лише ті, яких немає в списку фальшивих." }],
+          explain: [
+            "`NOT IN (SELECT …)` залишає рядки, значення яких немає в списку з підзапиту.",
+            "Будь обережний: якщо в списку з підзапиту є `NULL`, `NOT IN` не поверне жодного рядка. Тому в підзапиті вибирай стовпець, де `NULL` не буває, наприклад `id`.",
+            "Підзапит може повертати й одне число. Тоді його порівнюють знаками: `WHERE price > (SELECT AVG(price) FROM …)` знайде все, що дорожче за середнє."
+          ],
+          why: "Чесні результати означають «усі голоси, крім фальшивих». Список фальшивих акаунтів ми вже вміємо отримати запитом, тож лишається відкинути все, що в нього потрапляє.",
+          instead: [
+            { way: "`DELETE FROM votes …`", problem: "видалить докази з бази назавжди. Запит з `NOT IN` лише рахує без них, а дані лишаються." },
+            { way: "`WHERE class IS NOT NULL`", problem: "у таблиці `votes` немає класу, він лежить у `users`. Знадобився б `JOIN`, а підзапит коротший." }
+          ],
+          syntax: "WHERE стовпець NOT IN (SELECT стовпець FROM … WHERE …)",
+          notes: [
+            { code: "NOT IN (SELECT …)", text: "значення немає в списку з підзапиту" },
+            { code: "> (SELECT AVG(x) …)", text: "більше за число з підзапиту" }
+          ],
+          example: "SELECT title FROM projects WHERE id NOT IN (SELECT project_id FROM votes WHERE time < '06:00')"
         },
         {
           kind: "query",
@@ -1024,7 +1178,7 @@ export const fakeVotes: Case = {
     },
     {
       speaker: "robot",
-      text: "Справу розкрито! Дані спочатку вказували на «Теплицю», потім на Назара, потім на Софію. Детектив не вірить першому числу, він перевіряє ще й ще. У цій справі знадобилися `DISTINCT`, `HAVING`, `LEFT JOIN`, `substr` і підзапити. До зустрічі в наступній справі!"
+      text: "Справу розкрито! Дані спочатку вказували на «Теплицю», потім на Назара, потім на Софію. Детектив не вірить першому числу, він перевіряє ще й ще. У цій справі знадобилися `DISTINCT`, `MIN` і `MAX`, `strftime` і `substr`, `HAVING`, `IS NULL`, `LEFT JOIN` і підзапити. До зустрічі в наступній справі!"
     }
   ]
 }

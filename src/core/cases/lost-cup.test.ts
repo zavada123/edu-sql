@@ -80,7 +80,17 @@ describe("case «lost cup»", () => {
 
   it("runs the example of every lesson, and every lesson comes before the tasks of its chapter", () => {
     const lessons = allSteps(lostCup).flatMap((s) => (s.kind === "lesson" ? [s] : []))
-    expect(lessons.map((l) => l.id)).toEqual(["lesson-select", "lesson-where", "lesson-order", "lesson-like", "lesson-count", "lesson-join"])
+    expect(lessons.map((l) => l.id)).toEqual([
+      "lesson-select",
+      "lesson-where",
+      "lesson-and",
+      "lesson-order",
+      "lesson-like",
+      "lesson-count",
+      "lesson-group",
+      "lesson-join",
+      "lesson-between"
+    ])
     for (const l of lessons) expect(sandbox.run(l.example).kind, l.id).toBe("table")
   })
 
@@ -89,7 +99,7 @@ describe("case «lost cup»", () => {
       ...lostCup.ending.map((l) => l.text),
       ...allSteps(lostCup).flatMap((s) => [
         ...s.story.map((l) => l.text),
-        ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, taskText(s)])
+        ...(s.kind === "lesson" ? [s.why, ...s.explain, ...s.notes.map((n) => n.text), ...s.instead.flatMap((n) => [n.way, n.problem])] : [...s.hints, s.clue, taskText(s)])
       ])
     ]
     for (const t of texts) expect((t.match(/`/g) ?? []).length % 2, t).toBe(0)
@@ -99,7 +109,9 @@ describe("case «lost cup»", () => {
     const old = { ...emptyProgress(lostCup), solved: ["rooms", "people", "lab-log"] }
     expect(isStepDone(lostCup, old, "lesson-select")).toBe(true)
     expect(isStepDone(lostCup, old, "lesson-order")).toBe(false)
-    expect(currentStep(lostCup, old)?.id).toBe("lab-thursday")
+    // A task added later before a solved step is not skipped: the student goes back to it once.
+    expect(currentStep(lostCup, old)?.id).toBe("staff")
+    expect(currentStep(lostCup, { ...old, solved: [...old.solved, "staff"] })?.id).toBe("lesson-and")
     expect(currentStep(lostCup, emptyProgress(lostCup))?.id).toBe("lesson-select")
   })
 })

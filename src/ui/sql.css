@@ -1371,6 +1371,50 @@
   overflow-wrap: normal;
 }
 
+.edu-sql-why,
+.edu-sql-instead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.edu-sql-why {
+  background: rgba(16, 185, 129, 0.1);
+  border-left: 4px solid #10b981;
+}
+
+.edu-sql-instead {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid #f59e0b;
+}
+
+.edu-sql-why > span,
+.edu-sql-instead > span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.edu-sql-why > span {
+  color: #047857;
+}
+
+.edu-sql-instead > span {
+  color: #b45309;
+}
+
+.edu-sql-instead ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .edu-sql-lesson-try {
   padding: 10px 12px;
   border-radius: 10px;

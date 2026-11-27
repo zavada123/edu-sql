@@ -81,6 +81,14 @@ export interface LessonNote {
   readonly text: string
 }
 
+/** Another way to do the same thing, and what is wrong with it here. */
+export interface Alternative {
+  /** The other way, in words; SQL in `backticks`. */
+  readonly way: string
+  /** Why the lesson does not use it, in words; SQL in `backticks`. */
+  readonly problem: string
+}
+
 /**
  * A step that explains SQL words before the tasks that use them. The student reads it, runs the example
  * and changes it if they want. The step is not checked and does not change the score.
@@ -92,6 +100,10 @@ export interface LessonStep {
   readonly story: readonly StoryLine[]
   /** What the words do and why, one paragraph per item. */
   readonly explain: readonly string[]
+  /** What problem these words solve: why the detective needs them at all. */
+  readonly why: string
+  /** Other ways that look possible, each with the reason why the lesson does not use it. At least one. */
+  readonly instead: readonly Alternative[]
   /** The general form, for example "SELECT стовпці FROM таблиця". */
   readonly syntax: string
   readonly notes: readonly LessonNote[]
