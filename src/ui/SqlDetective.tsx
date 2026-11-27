@@ -3,7 +3,12 @@ import type { SqlJsStatic } from "sql.js"
 import {
   allSteps,
   checkAnswer,
+  checkBuild,
   checkQuery,
+  describeTables,
+  hasBuildSteps,
+  stepSandbox,
+  taskText,
   currentStep,
   emptyProgress,
   makeReport,
@@ -14,7 +19,10 @@ import {
   type Progress,
   type Report,
   type RunResult,
-  type Step
+  type Step,
+  type TableInfo,
+  type TrialResult,
+  type Verdict
 } from "../core/index.ts"
 import { Lesson } from "./Lesson.tsx"
 import { RichText } from "./RichText.tsx"
@@ -27,6 +35,7 @@ import { Robot } from "./Robot.tsx"
 import { Schema } from "./Schema.tsx"
 import { SqlEditor } from "./SqlEditor.tsx"
 import { Story } from "./Story.tsx"
+import { Trials } from "./Trials.tsx"
 import "./sql.css"
 import "./rich-text.css"
 
@@ -59,6 +68,9 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
   const [feedback, setFeedback] = useState<Feedback>({ kind: "none" })
   const [answer, setAnswer] = useState("")
   const [tab, setTab] = useState<Tab>("result")
+  const [trials, setTrials] = useState<readonly TrialResult[]>([])
+  /** The tables after the last run of a build case, or undefined to show the tables of the step. */
+  const [live, setLive] = useState<TableInfo[]>()
   const inserter = useRef<((text: string) => void) | null>(null)
   const root = useRef<HTMLDivElement>(null)
   const screen = useFullScreen(root)
@@ -76,9 +88,14 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
 
   const sandbox = useMemo(() => (sql ? new Sandbox(sql, c.setup) : undefined), [sql, c.setup])
   const steps = useMemo(() => allSteps(c), [c])
+  const building = useMemo(() => hasBuildSteps(c), [c])
   const step: Step | undefined = steps.find((s) => s.id === viewing)
+  /** The database of the step: in a build case it has the tables of the earlier steps. */
+  const base = useMemo(() => (sandbox ? stepSandbox(sandbox, c, viewing) : undefined), [sandbox, c, viewing])
+  const baseTables = useMemo(() => (building && base ? describeTables(base, c.tables) : c.tables), [building, base, c.tables])
+  const tables = live ?? baseTables
   const solved = step !== undefined && progress.solved.includes(step.id)
-  const query = step ? (progress.drafts[step.id] ?? (step.kind === "query" ? step.starter : step.kind === "lesson" ? step.example : "")) : ""
+  const query = step ? (progress.drafts[step.id] ?? (step.kind === "lesson" ? step.example : step.kind === "answer" ? "" : step.starter)) : ""
   const hintsShown = step ? (progress.hintsUsed[step.id] ?? 0) : 0
 
   const update = (next: Progress) => {
@@ -92,6 +109,8 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
     setFeedback({ kind: "none" })
     setAnswer("")
     setTab("result")
+    setTrials([])
+    setLive(undefined)
   }
 
   const solve = (s: Step, accepted: string) => {
@@ -102,11 +121,21 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
   }
 
   const run = () => {
-    if (!sandbox || !step) return
-    setResult(sandbox.run(query))
-    setTab("result")
-    if (step.kind !== "query" || solved) return
-    const verdict = checkQuery(sandbox, step, query)
+    if (!base || !step) return
+    const ran = base.run(query)
+    setResult(ran)
+    if (building) {
+      const after = base.attempt(query)
+      setLive("kind" in after ? undefined : describeTables(after, c.tables))
+    }
+    setTab(building && ran.kind === "empty" ? "schema" : "result")
+    if (step.kind === "lesson" || step.kind === "answer" || solved) return
+    let verdict: Verdict
+    if (step.kind === "build") {
+      const checked = checkBuild(base, step, query)
+      setTrials(checked.trials)
+      verdict = checked.verdict
+    } else verdict = checkQuery(base, step, query)
     if (verdict.kind === "ok") solve(step, query)
     else setFeedback(verdict.kind === "error" ? { kind: "none" } : { kind: "wrong", text: verdictMessage(verdict) })
   }
@@ -218,12 +247,12 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
               <>
                 <div className="edu-sql-task">
                   <span className="edu-sql-task-icon" aria-hidden="true">
-                    {step.kind === "query" ? "🎯" : "❓"}
+                    {step.kind === "query" ? "🎯" : step.kind === "build" ? "🧱" : "❓"}
                   </span>
                   <div>
-                    <strong>{step.kind === "query" ? "Завдання" : "Питання"}</strong>
+                    <strong>{step.kind === "answer" ? "Питання" : "Завдання"}</strong>
                     <p>
-                      <RichText text={step.kind === "query" ? step.task : step.question} />
+                      <RichText text={taskText(step)} />
                     </p>
                   </div>
                 </div>
@@ -260,6 +289,7 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
                     <span aria-hidden="true">🤔</span> <RichText text={feedback.text} />
                   </p>
                 )}
+                {trials.length > 0 && <Trials trials={trials} />}
                 {solved && (
                   <div className={`edu-sql-clue${feedback.kind === "ok" ? " is-new" : ""}`} role="status">
                     <div className="edu-sql-clue-head">
@@ -286,17 +316,17 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
               onRun={run}
               inserterRef={inserter}
               chips={c.chips}
-              title={`ліцей.db — ${step.title}`}
+              title={`${c.file} — ${step.title}`}
               toolbar={
                 <>
-                  <button type="button" className="edu-sql-btn edu-sql-btn-run" onClick={run} disabled={!sandbox}>
+                  <button type="button" className="edu-sql-btn edu-sql-btn-run" onClick={run} disabled={!base}>
                     <span aria-hidden="true">▶</span> Виконати
                   </button>
                   <button type="button" className="edu-sql-btn edu-sql-btn-ghost" onClick={() => setQuery("")} disabled={query === ""}>
                     Очистити
                   </button>
                   <span className="edu-sql-term-hint">
-                    {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : sandbox ? <RichText text="[k]Ctrl+Enter[/k]" /> : "Завантажую базу даних…"}
+                    {loadError ? `Не вдалося завантажити SQLite: ${loadError}` : base ? <RichText text="[k]Ctrl+Enter[/k]" /> : "Завантажую базу даних…"}
                   </span>
                 </>
               }
@@ -307,11 +337,11 @@ export const SqlDetective = ({ case: c, initialProgress, onChange, onStepSolved,
                   Результат
                 </button>
                 <button type="button" role="tab" aria-selected={tab === "schema"} className={tab === "schema" ? "is-on" : ""} onClick={() => setTab("schema")}>
-                  Таблиці бази <span className="edu-sql-badge">{c.tables.length}</span>
+                  Таблиці бази <span className="edu-sql-badge">{tables.length}</span>
                 </button>
               </div>
               <div role="tabpanel" className="edu-sql-panel-body">
-                {tab === "result" ? <ResultView result={result} /> : <Schema tables={c.tables} onInsert={(t) => inserter.current?.(t)} />}
+                {tab === "result" ? <ResultView result={result} /> : <Schema tables={tables} onInsert={(t) => inserter.current?.(t)} />}
               </div>
             </div>
           </section>

@@ -26,16 +26,20 @@ The student-facing interface is in Ukrainian. It was built for [EduProstir](http
 
 - **Real SQLite in the browser** through [sql.js](https://sql.js.org) (WASM). No server is needed.
 - **Every query runs on a fresh copy** of the database, so `DELETE` or `DROP` cannot break the case.
+- **Build steps:** the student creates and changes tables. The trainer compares the columns (names and SQLite type affinity, so `VARCHAR(30)` counts as `TEXT`) and the rows with the reference solution, then runs *trials*: test records that the table must accept or refuse. The student sees each trial with ✓ or ✗ and an explanation, so `CHECK (age >= 0)` and `CHECK (age > -1)` are both correct. Each step starts from the database of the reference solutions of the earlier steps, and foreign keys are on.
 - **Checks by result, not by text:** the student's table is compared with the result of a reference query. Column names and (when the task does not ask for `ORDER BY`) the row order are ignored, so any correct query is accepted. A step can require words such as `JOIN` or `GROUP BY`.
 - **Precise feedback in Ukrainian:** "5 columns, but 3 are needed", "too many rows, add a condition", "the rows are correct, but the order is different", and explanations of SQLite errors (`no such column`, `syntax error`, unclosed quotes, aggregates in `WHERE`, …).
+- **Lessons:** each lesson says why the student needs the new words («Навіщо це») and why the case does not use another way («Чому не інакше»), for example `IS NULL` and not `= NULL`.
 - **Story steps:** the robot Біт explains each new idea; answer steps ask the student to draw a conclusion from the data (a number or a name).
 - **Hints** from gentle to almost the answer. Each hint lowers the score of the step a little.
 - **Phone friendly:** one-tap SQL word buttons, and a tap on a table or column name in the schema inserts it into the query.
 - **Protection from runaway queries:** a query that returns more than 5000 rows (for example, a join without `ON`) stops with a message.
 
-Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `BETWEEN` and `JOIN` in 14 tasks and 6 lessons (grades 7–11).
+Case 1, «Справа про зниклий кубок», covers `SELECT`, `WHERE`, `AND`, `OR`, `ORDER BY`, `LIMIT`, `LIKE`, `COUNT`, `GROUP BY`, `JOIN` and `BETWEEN` in 19 tasks and 9 lessons (grades 7–11).
 
-Case 2, «Справа про фальшиве голосування», is for grades 9–11. It covers `DISTINCT`, `MIN`/`MAX`, `substr`, `HAVING`, `LEFT JOIN`, `IS NULL`, `JOIN` of three tables and subqueries in 17 tasks and 7 lessons. Its database of about 1 300 rows comes from `scripts/fake-votes-db.py`, a seeded generator that also prints the facts of the story.
+Case 2, «Справа про фальшиве голосування», is for grades 9–11. It covers `DISTINCT`, `MIN`/`MAX`, `strftime`, `substr`, `HAVING`, `IS NULL`, `LEFT JOIN`, `JOIN` of three tables, subqueries and `NOT IN` in 21 tasks and 10 lessons. Its database of about 1 300 rows comes from `scripts/fake-votes-db.py`, a seeded generator that also prints the facts of the story.
+
+Case 3, «Справа про загублені лапи», teaches the student to build a database: `CREATE TABLE`, column types, `INSERT`, `PRIMARY KEY`, `NOT NULL`, `DEFAULT`, `UNIQUE`, `CHECK`, `REFERENCES`, `ALTER TABLE`, `UPDATE` and `DELETE` in 27 tasks and 14 lessons, one idea per step. The student builds the tables of an animal shelter, and at the end the rules of these tables refuse forged adoption requests.
 
 ## Installation
 
@@ -132,7 +136,7 @@ live database do not break it. Marks of solved tasks stay in the browser (`local
 
 ## Writing a case
 
-A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, the SQL words for the buttons under the editor (`chips`), chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.
+A `Case` has the SQL that creates the database (`setup`), a description of the tables for the schema panel, the SQL words for the buttons under the editor (`chips`), chapters of steps and an ending. A `query` step has a reference `solution`; an `answer` step has a list of `accepted` answers. A `build` step has a reference `solution`, the `tables` whose columns and the `data` whose rows must match it, `trials`, and `after` (SQL that the trainer adds for the next steps). Every step runs on the case database after the solutions and `after` of the earlier build steps (`stepSandbox`). The test in `src/core/cases/lost-cup.test.ts` runs every reference solution and checks that the facts in the clues are true. Copy it for a new case.
 
 ## Development
 

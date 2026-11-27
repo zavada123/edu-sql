@@ -18,6 +18,10 @@ export declare const checkAnswer: (step: AnswerStep, text: string) => Verdict;
 export declare const verdictMessage: (v: Verdict) => string;
 /** Ukrainian plural form for a count. */
 export declare const plural: (n: number, one: string, few: string, many: string) => string;
+/** The reference query or the first accepted answer: a text that solves the step. */
+export declare const referenceAnswer: (step: TaskStep) => string;
+/** What the student must do: the task of a query or build step, or the question of an answer step. */
+export declare const taskText: (step: TaskStep) => string;
 export declare const allSteps: (c: Case) => Step[];
 /** Steps that the student must solve, without lessons. */
 export declare const taskSteps: (c: Case) => TaskStep[];
@@ -38,4 +42,6 @@ export declare const caseScore: (c: Case, solved: readonly string[], hintsUsed: 
  * issues a certificate. A step without an answer does not pass. Lessons are not checked.
  */
 export declare const checkCase: (sandbox: Sandbox, c: Case, answers: Readonly<Record<string, string>>) => StepCheck[];
+/** Checks the query, the answer or the build of a task step on the database of the step. */
+export declare const checkStep: (base: Sandbox, step: TaskStep, text: string) => Verdict;
 export declare const makeReport: (c: Case, p: Progress, stepId: string) => Report;

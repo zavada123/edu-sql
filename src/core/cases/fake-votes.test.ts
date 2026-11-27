@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { allSteps, checkAnswer, checkCase, checkQuery, taskSteps } from "../check.ts"
+import { allSteps, checkCase, checkQuery, taskSteps, checkStep, referenceAnswer, taskText } from "../check.ts"
+import { stepSandbox } from "../build.ts"
 import { Sandbox } from "../run.ts"
 import { loadSqlForTests } from "../testing.ts"
 import { fakeVotes } from "./fake-votes.ts"
@@ -25,20 +26,19 @@ const queryStep = (id: string) => {
 
 describe("case «fake votes»", () => {
   it("is in the list of cases after the first case", () => {
-    expect(cases.map((c) => c.id)).toEqual(["lost-cup", "fake-votes"])
+    expect(cases.map((c) => c.id)).toEqual(["lost-cup", "fake-votes", "lost-paws"])
   })
 
-  it("has unique step ids, 7 lessons and 17 tasks", () => {
+  it("has unique step ids, 10 lessons and 21 tasks", () => {
     const ids = allSteps(fakeVotes).map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
-    expect(taskSteps(fakeVotes)).toHaveLength(17)
-    expect(allSteps(fakeVotes).filter((s) => s.kind === "lesson")).toHaveLength(7)
+    expect(taskSteps(fakeVotes)).toHaveLength(21)
+    expect(allSteps(fakeVotes).filter((s) => s.kind === "lesson")).toHaveLength(10)
   })
 
   it("accepts every reference solution", () => {
     for (const step of taskSteps(fakeVotes)) {
-      if (step.kind === "query") expect(checkQuery(sandbox, step, step.solution), step.id).toEqual({ kind: "ok" })
-      else expect(checkAnswer(step, step.accepted[0] ?? ""), step.id).toEqual({ kind: "ok" })
+      expect(checkStep(sandbox, step, referenceAnswer(step)), step.id).toEqual({ kind: "ok" })
     }
   })
 
@@ -124,7 +124,7 @@ describe("case «fake votes»", () => {
   })
 
   it("checks the whole case again from saved answers", () => {
-    const answers = Object.fromEntries(taskSteps(fakeVotes).map((s) => [s.id, s.kind === "query" ? s.solution : (s.accepted[0] ?? "")]))
+    const answers = Object.fromEntries(taskSteps(fakeVotes).map((s) => [s.id, referenceAnswer(s)]))
     expect(checkCase(sandbox, fakeVotes, answers).every((r) => r.passed)).toBe(true)
     const forged = { ...answers, culprit: "Софія Мельник" }
     expect(checkCase(sandbox, fakeVotes, forged).filter((r) => !r.passed).map((r) => r.stepId)).toEqual(["culprit"])
@@ -136,17 +136,31 @@ describe("all cases", () => {
     const sql = await loadSqlForTests()
     for (const c of cases) {
       const box = new Sandbox(sql, c.setup)
-      for (const s of allSteps(c)) if (s.kind === "lesson") expect(box.run(s.example).kind, `${c.id}/${s.id}`).toBe("table")
+      for (const s of allSteps(c)) if (s.kind === "lesson") expect(stepSandbox(box, c, s.id).run(s.example).kind, `${c.id}/${s.id}`).toBe("table")
       const texts = [
         c.summary,
         ...c.ending.map((l) => l.text),
         ...allSteps(c).flatMap((s) => [
           ...s.story.map((l) => l.text),
-          ...(s.kind === "lesson" ? [...s.explain, ...s.notes.map((n) => n.text)] : [...s.hints, s.clue, s.kind === "query" ? s.task : s.question])
+          ...(s.kind === "lesson" ? [s.why, ...s.explain, ...s.notes.map((n) => n.text), ...s.instead.flatMap((n) => [n.way, n.problem])] : [...s.hints, s.clue, taskText(s)])
         ])
       ]
       for (const t of texts) expect((t.match(/`/g) ?? []).length % 2, t).toBe(0)
     }
+  })
+
+  it("say in every lesson why the words are needed and why not something else", () => {
+    for (const c of cases)
+      for (const s of allSteps(c))
+        if (s.kind === "lesson") {
+          expect(s.why.length, `${c.id}/${s.id}`).toBeGreaterThan(40)
+          expect(s.instead.length, `${c.id}/${s.id}`).toBeGreaterThan(0)
+          expect(new Set(s.instead.map((n) => n.way)).size, `${c.id}/${s.id}`).toBe(s.instead.length)
+        }
+  })
+
+  it("keep every case within the step limit of the platform", () => {
+    for (const c of cases) expect(allSteps(c).length, c.id).toBeLessThanOrEqual(64)
   })
 
   it("start every chapter with a lesson", () => {

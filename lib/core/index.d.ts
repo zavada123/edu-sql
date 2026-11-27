@@ -4,3 +4,4 @@ export * from "./errors.ts";
 export * from "./run.ts";
 export * from "./types.ts";
 export * from "./practice.ts";
+export * from "./build.ts";
